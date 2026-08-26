@@ -16,9 +16,15 @@
 /vibe-coding-policy:setup
 ```
 
-`/vibe-coding-policy:setup` จะพา User ผ่าน installation ทั้งหมด — ถาม scope, copy files, chmod hooks, และติดตั้ง gitleaks ให้
+ตอน `/plugin install` Claude Code จะถามว่าจะติดตั้ง Scope ไหน — เลือก **"Install for you (user scope)"** เพื่อให้ Policy ทำงานกับทุก Project บนเครื่อง:
 
-> **ถ้ายังไม่ได้เปิด Claude Code** ให้ทำ step 1-2 ใน session แรก แล้วรัน `/vibe-coding-policy:setup` ได้เลย
+| Scope | เก็บที่ | ใครได้ใช้ |
+|---|---|---|
+| **User** (แนะนำ) | `~/.claude/settings.json` | ทุก Project ของคุณบนเครื่องนี้ |
+| **Project** | `.claude/settings.json` (commit ขึ้น git) | ทุกคนที่ clone repo นี้ |
+| **Local** | `.claude/settings.local.json` (gitignored) | แค่คุณคนเดียวใน repo นี้ |
+
+`/vibe-coding-policy:setup` จะพา User ผ่าน installation ที่เหลือทั้งหมด — copy hooks, copy skills, และติดตั้ง gitleaks ให้
 
 ---
 

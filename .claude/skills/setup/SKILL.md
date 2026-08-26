@@ -1,78 +1,73 @@
 ---
 name: setup
 description: >
-  Install the Vibe Coding Starter Policy on this machine — copies hooks, skills,
+  Install the Vibe Coding Policy on this machine — copies hooks, skills,
   and settings to the right place, sets permissions, and installs gitleaks.
   Use when: a new team member wants to set up the policy, or the user asks
   "how do I install the policy?" or "set up security for me".
-allowed-tools: Bash(chmod *) Bash(cp *) Bash(mkdir *) Bash(brew *) Bash(apt *) Bash(gitleaks *) Bash(ls *) Bash(echo *)
+allowed-tools: Bash(chmod *) Bash(cp *) Bash(mkdir *) Bash(brew *) Bash(apt *) Bash(gitleaks *) Bash(ls *) Bash(echo *) Bash(uname *) Bash(command *)
 ---
 
-# Vibe Coding Starter Policy — Setup Assistant
+# Vibe Coding Policy — Setup Assistant
 
-Help the user install the Vibe Coding Starter Policy on their machine.
+Help the user install the Vibe Coding Policy on their machine.
 Work through the steps below in order. Be friendly and explain what you're doing at each step.
 
----
+The policy files are bundled with this plugin. Reference them using `${CLAUDE_SKILL_DIR}/../..` which resolves to the plugin root containing `.claude/hooks/`, `.claude/skills/`, etc.
 
-## Step 1 — Detect where this policy lives
-
-Find the policy directory by looking for the presence of `.claude/hooks/` and `CLAUDE.md`:
-
+Set this at the start:
 ```bash
-# Check if we're already inside the policy directory
-ls .claude/hooks/no-hardcoded-secrets.sh 2>/dev/null && echo "IN_POLICY_DIR" || echo "NOT_IN_POLICY_DIR"
+POLICY_DIR="${CLAUDE_SKILL_DIR}/../.."
 ```
 
-If `NOT_IN_POLICY_DIR`, tell the user:
-> "Please run this skill from inside the `vibe-coding-policy/` directory, or tell me where the policy folder is."
-Then stop and wait.
-
 ---
 
-## Step 2 — Ask: project scope or global?
+## Step 1 — Ask: global or project only?
 
 Ask the user:
 
 > "Where would you like to install this policy?
 >
-> 1. **This project only** — installs into `.claude/` in your current project folder
-> 2. **All my projects (recommended)** — installs into `~/.claude/` and applies to every project
+> 1. **All my projects (recommended)** — installs into `~/.claude/` and applies to every project on this machine
+> 2. **This project only** — installs into `.claude/` in the current folder
 >
 > Type 1 or 2."
 
 Set `INSTALL_TARGET` based on their answer:
-- Answer 1 → `INSTALL_TARGET=".claude"`
-- Answer 2 → `INSTALL_TARGET="$HOME/.claude"`
+- Answer 1 → `INSTALL_TARGET="$HOME/.claude"`
+- Answer 2 → `INSTALL_TARGET=".claude"`
 
 ---
 
-## Step 3 — Install hooks and settings
+## Step 2 — Install hooks
 
 ```bash
-# Create directories
 mkdir -p ${INSTALL_TARGET}/hooks
-mkdir -p ${INSTALL_TARGET}/skills
 
-# Copy hooks
-cp .claude/hooks/session-start-check.sh ${INSTALL_TARGET}/hooks/
-cp .claude/hooks/no-hardcoded-secrets.sh ${INSTALL_TARGET}/hooks/
-cp .claude/hooks/no-sensitive-files-in-git.sh ${INSTALL_TARGET}/hooks/
-cp .claude/hooks/confirm-destructive-ops.sh ${INSTALL_TARGET}/hooks/
-cp .claude/hooks/check-public-repo-push.sh ${INSTALL_TARGET}/hooks/
-cp .claude/hooks/auto-detect-and-lint.sh ${INSTALL_TARGET}/hooks/
+cp ${POLICY_DIR}/.claude/hooks/session-start-check.sh ${INSTALL_TARGET}/hooks/
+cp ${POLICY_DIR}/.claude/hooks/no-hardcoded-secrets.sh ${INSTALL_TARGET}/hooks/
+cp ${POLICY_DIR}/.claude/hooks/no-sensitive-files-in-git.sh ${INSTALL_TARGET}/hooks/
+cp ${POLICY_DIR}/.claude/hooks/confirm-destructive-ops.sh ${INSTALL_TARGET}/hooks/
+cp ${POLICY_DIR}/.claude/hooks/check-public-repo-push.sh ${INSTALL_TARGET}/hooks/
+cp ${POLICY_DIR}/.claude/hooks/auto-detect-and-lint.sh ${INSTALL_TARGET}/hooks/
 
-# Make all hooks executable
 chmod +x ${INSTALL_TARGET}/hooks/*.sh
-
-# Copy skills
-cp -r .claude/skills/check-secrets ${INSTALL_TARGET}/skills/
-cp -r .claude/skills/new-project ${INSTALL_TARGET}/skills/
-cp -r .claude/skills/setup-linting ${INSTALL_TARGET}/skills/
-cp -r .claude/skills/setup ${INSTALL_TARGET}/skills/
 ```
 
-After this step, tell the user what was copied and confirm it succeeded.
+Tell the user which hooks were copied.
+
+---
+
+## Step 3 — Install skills
+
+```bash
+mkdir -p ${INSTALL_TARGET}/skills
+
+cp -r ${POLICY_DIR}/.claude/skills/check-secrets ${INSTALL_TARGET}/skills/
+cp -r ${POLICY_DIR}/.claude/skills/new-project ${INSTALL_TARGET}/skills/
+cp -r ${POLICY_DIR}/.claude/skills/setup-linting ${INSTALL_TARGET}/skills/
+cp -r ${POLICY_DIR}/.claude/skills/setup ${INSTALL_TARGET}/skills/
+```
 
 ---
 
@@ -86,13 +81,13 @@ ls ${INSTALL_TARGET}/settings.json 2>/dev/null && echo "EXISTS" || echo "NOT_EXI
 
 **If NOT_EXISTS:** copy directly:
 ```bash
-cp .claude/settings.json ${INSTALL_TARGET}/settings.json
+cp ${POLICY_DIR}/.claude/settings.json ${INSTALL_TARGET}/settings.json
 ```
 
 **If EXISTS:** tell the user:
-> "You already have a `settings.json`. I'll show you what needs to be merged — the hooks and permissions sections from this policy."
+> "You already have a `settings.json`. I'll show you what needs to be added — the hooks and permissions sections from this policy."
 
-Then show the user the relevant sections from `.claude/settings.json` and explain how to merge them manually, or ask if they want you to merge automatically (by reading both files and combining them).
+Read both files and merge the `hooks` and `permissions.deny` sections. Ask the user to confirm before writing.
 
 ---
 
@@ -100,17 +95,17 @@ Then show the user the relevant sections from `.claude/settings.json` and explai
 
 Ask the user:
 
-> "Would you like to copy the base `CLAUDE.md` policy file to your project?
-> This gives Claude the security rules to follow. You can customize it later.
+> "Would you like to copy the base `CLAUDE.md` to your current project?
+> It gives Claude the security rules to follow. You can customize it later.
 >
 > Type yes or no."
 
 If yes:
 ```bash
-cp CLAUDE.md ${INSTALL_TARGET}/../CLAUDE.md 2>/dev/null || cp CLAUDE.md ./CLAUDE.md
+cp ${POLICY_DIR}/CLAUDE.md ./CLAUDE.md
 ```
 
-Explain: "This is a starting point — you can add your project's build commands and known Claude mistakes to this file."
+Explain: "This is a starting point — add your project's build commands and known Claude mistakes here."
 
 ---
 
@@ -122,29 +117,23 @@ Check if gitleaks is already installed:
 command -v gitleaks &>/dev/null && echo "INSTALLED: $(gitleaks version)" || echo "NOT_INSTALLED"
 ```
 
-**If INSTALLED:** Tell the user gitleaks is already present and skip to Step 7.
+**If INSTALLED:** Tell the user it's already present and skip to Step 7.
 
-**If NOT_INSTALLED:** Detect the OS and offer to install:
+**If NOT_INSTALLED:** Detect OS and offer to install:
 
 ```bash
 uname -s
 ```
 
-- If `Darwin` (macOS):
-  > "I'll install gitleaks using Homebrew. This requires Homebrew to be installed. Shall I proceed? (yes/no)"
-  If yes: `brew install gitleaks`
-
-- If `Linux`:
-  > "What package manager does your system use? (apt / snap / other)"
-  - `apt`: `sudo apt install -y gitleaks`
-  - `snap`: `sudo snap install gitleaks`
-  - `other`: show the manual install link: https://github.com/gitleaks/gitleaks#installing
+- `Darwin` (macOS): ask "Shall I install gitleaks via Homebrew now? (yes/no)" → `brew install gitleaks`
+- `Linux`: ask which package manager (apt / snap / other)
+  - `apt` → `sudo apt install -y gitleaks`
+  - `snap` → `sudo snap install gitleaks`
+  - other → show: https://github.com/gitleaks/gitleaks#installing
 
 ---
 
-## Step 7 — Verify installation
-
-Run a quick check to confirm everything is in place:
+## Step 7 — Verify
 
 ```bash
 echo "=== Hooks ===" && ls ${INSTALL_TARGET}/hooks/*.sh
@@ -155,29 +144,34 @@ echo "=== settings.json ===" && (ls ${INSTALL_TARGET}/settings.json 2>/dev/null 
 
 ---
 
-## Step 8 — Summary and next steps
-
-Tell the user what was installed and what to do next:
+## Step 8 — Summary
 
 ```
-✅ Vibe Coding Starter Policy installed!
+✅ Vibe Coding Policy installed!
 
 Installed to: ${INSTALL_TARGET}
 
-What's active now:
-- Hooks run automatically on every file edit and git command
-- Skills available: /safe-project-setup, /check-secrets-before-commit, /setup-linting
+Hooks active (automatic — no action needed):
+- Secret scanning on every file edit (gitleaks)
+- Blocks .env / .pem / .key from git commits
+- Blocks pushes to public GitHub repos
+- Blocks rm -rf, force push, production deploys
+- Auto-lints after file edits
+
+Skills available:
+- /vibe-coding-policy:new-project   — bootstrap a new project safely
+- /vibe-coding-policy:check-secrets — scan for secrets before committing
+- /vibe-coding-policy:setup-linting — install the right linter for your language
 
 Next steps:
-1. Restart your Claude Code session (or run /reload-plugins) for hooks to take effect
-2. Run /safe-project-setup when starting a new project
-3. Run /setup-linting to configure linting for your language
-4. Customize CLAUDE.md with your project's build commands and known issues
+1. Run /reload-plugins or restart Claude Code for hooks to take effect
+2. Run /vibe-coding-policy:new-project when starting a new project
+3. Customize CLAUDE.md with your project's build commands and known issues
 ```
 
 If gitleaks was NOT installed, add:
 ```
-⚠️  gitleaks is not installed — Claude will block file edits until it's installed.
-   Install it with: brew install gitleaks  (macOS)
-                    sudo apt install gitleaks  (Linux)
+⚠️  gitleaks is not installed — Claude will block all file edits until it's installed.
+   Install: brew install gitleaks  (macOS)
+            sudo apt install gitleaks  (Linux)
 ```
