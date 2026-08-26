@@ -9,7 +9,5 @@
   "homepage": "https://github.com/chinnme/claude-code-vibe-coding-policy",
   "repository": "https://github.com/chinnme/claude-code-vibe-coding-policy",
   "license": "MIT",
-  "keywords": ["security", "policy", "vibe-coding", "gitleaks", "hooks", "non-dev"],
-  "skills": ".claude/skills",
-  "hooks": ".claude/settings.json"
+  "keywords": ["security", "policy", "vibe-coding", "gitleaks", "hooks", "non-dev"]
 }
