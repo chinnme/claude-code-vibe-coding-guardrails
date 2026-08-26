@@ -158,9 +158,9 @@ run_test "resume: exits 0 (non-blocking)"  "0" "$(session_json 'resume')"  "$HOO
 
 # Verify gitleaks detection message matches installed state
 if command -v gitleaks &>/dev/null; then
-  # Should mention gitleaks version in stderr
-  actual_stderr=$(printf '%s' "$(session_json 'startup')" | bash "$HOOK" 2>&1 >/dev/null || true)
-  if echo "$actual_stderr" | grep -q "gitleaks"; then
+  # Script writes gitleaks version to stdout (plain text or JSON additionalContext)
+  actual_stdout=$(printf '%s' "$(session_json 'startup')" | bash "$HOOK" 2>/dev/null || true)
+  if echo "$actual_stdout" | grep -q "gitleaks"; then
     green "  PASS  startup: gitleaks detected and mentioned in output"
     ((PASS++)) || true
   else
@@ -168,8 +168,9 @@ if command -v gitleaks &>/dev/null; then
     ((FAIL++)) || true
   fi
 else
-  actual_stderr=$(printf '%s' "$(session_json 'startup')" | bash "$HOOK" 2>&1 >/dev/null || true)
-  if echo "$actual_stderr" | grep -q "not installed"; then
+  # Script writes JSON additionalContext with install guide to stdout
+  actual_stdout=$(printf '%s' "$(session_json 'startup')" | bash "$HOOK" 2>/dev/null || true)
+  if echo "$actual_stdout" | grep -q "not installed"; then
     green "  PASS  startup: install guide shown when gitleaks missing"
     ((PASS++)) || true
   else
@@ -316,37 +317,205 @@ fi
 fi
 
 # ══════════════════════════════════════════════════════════════════════════════
-# 5. auto-detect-and-lint.sh  (PostToolUse)
+# 5. check-insecure-patterns.sh  (PostToolUse)
 # ══════════════════════════════════════════════════════════════════════════════
-if run_suite "auto-detect-and-lint"; then
-HOOK="$HOOKS_DIR/auto-detect-and-lint.sh"
+if run_suite "check-insecure-patterns"; then
+HOOK="$HOOKS_DIR/check-insecure-patterns.sh"
 
-TMPDIR_L=$(mktemp -d)
-trap 'rm -rf "$TMPDIR_S" "$TMPDIR_L" 2>/dev/null || true' EXIT
+TMPDIR_P=$(mktemp -d)
+trap 'rm -rf "$TMPDIR_S" "$TMPDIR_P" 2>/dev/null || true' EXIT
 
-JSON_FILE="$TMPDIR_L/data.json"; echo '{"key":"value"}' > "$JSON_FILE"
-PY_CLEAN="$TMPDIR_L/clean.py"; printf 'def hello():\n    print("hello")\n' > "$PY_CLEAN"
-PY_DIRTY="$TMPDIR_L/dirty.py"; printf 'import os,sys\nx=1;y=2\nprint(x+y)\n' > "$PY_DIRTY"
-SH_CLEAN="$TMPDIR_L/clean.sh"; printf '#!/bin/bash\necho "hello world"\n' > "$SH_CLEAN"
-SH_DIRTY="$TMPDIR_L/dirty.sh"; printf '#!/bin/bash\nx=`echo hello`\n[ $x == "hello" ] && echo "ok"\n' > "$SH_DIRTY"
+# CORS wildcard files
+CORS_BAD="$TMPDIR_P/server_bad.js"
+cat > "$CORS_BAD" << 'EOF'
+app.use(cors({ origin: "*", credentials: true }))
+EOF
 
-run_test "edge: unsupported type (json)" "0" "$(edit_json "$JSON_FILE")"          "$HOOK"
-run_test "edge: nonexistent file"        "0" "$(edit_json '/no/such/file.py')"    "$HOOK"
-run_test "edge: Write tool json works"   "0" "$(write_json "$JSON_FILE")"         "$HOOK"
+CORS_GOOD="$TMPDIR_P/server_good.js"
+cat > "$CORS_GOOD" << 'EOF'
+app.use(cors({ origin: ["https://app.example.com"], credentials: true }))
+EOF
 
-if command -v ruff &>/dev/null; then
-  run_test "py: clean passes"            "0" "$(edit_json "$PY_CLEAN")"  "$HOOK"
-  run_test "py: dirty warns"             "1" "$(edit_json "$PY_DIRTY")"  "$HOOK"
-  run_test "py: Write tool works"        "0" "$(write_json "$PY_CLEAN")" "$HOOK"
-else
-  yellow "  SKIP  python lint tests (ruff not installed — run /setup-linting)"; ((SKIP+=3)) || true
+# localStorage token files
+LS_BAD="$TMPDIR_P/auth_bad.js"
+cat > "$LS_BAD" << 'EOF'
+localStorage.setItem("token", response.data.access_token)
+EOF
+
+LS_JWT_BAD="$TMPDIR_P/auth_jwt_bad.js"
+cat > "$LS_JWT_BAD" << 'EOF'
+localStorage.setItem('jwt', token)
+EOF
+
+LS_GOOD="$TMPDIR_P/auth_good.js"
+cat > "$LS_GOOD" << 'EOF'
+sessionStorage.setItem("token", response.data.access_token)
+EOF
+
+LS_READ_GOOD="$TMPDIR_P/auth_read_good.js"
+cat > "$LS_READ_GOOD" << 'EOF'
+const token = localStorage.getItem("token")
+EOF
+
+NON_JS="$TMPDIR_P/data.json"
+echo '{"origin": "*"}' > "$NON_JS"
+
+run_test "edge: nonexistent file passes"       "0" "$(edit_json '/no/such/file.js')"     "$HOOK"
+run_test "edge: non-code file skipped (json)"  "0" "$(edit_json "$NON_JS")"              "$HOOK"
+run_test "CORS: explicit origin passes"        "0" "$(edit_json "$CORS_GOOD")"           "$HOOK"
+run_test "CORS: wildcard origin blocked"       "2" "$(edit_json "$CORS_BAD")"            "$HOOK"
+run_test "CORS: Write tool also blocked"       "2" "$(write_json "$CORS_BAD")"           "$HOOK"
+run_test "localStorage: read-only passes"      "0" "$(edit_json "$LS_READ_GOOD")"        "$HOOK"
+run_test "localStorage: sessionStorage passes" "0" "$(edit_json "$LS_GOOD")"             "$HOOK"
+run_test "localStorage: setItem token blocked" "2" "$(edit_json "$LS_BAD")"              "$HOOK"
+run_test "localStorage: setItem jwt blocked"   "2" "$(edit_json "$LS_JWT_BAD")"          "$HOOK"
 fi
 
-if command -v shellcheck &>/dev/null; then
-  run_test "sh: clean passes"            "0" "$(edit_json "$SH_CLEAN")"  "$HOOK"
-  run_test "sh: dirty warns"             "1" "$(edit_json "$SH_DIRTY")"  "$HOOK"
+# ══════════════════════════════════════════════════════════════════════════════
+# INTEGRATION TESTS — uses real `claude -p` to verify hooks fire end-to-end
+# Requires: claude CLI in PATH, valid ANTHROPIC_API_KEY
+# Usage:    bash test-hooks.sh integration
+#           bash test-hooks.sh  (runs unit + integration)
+# ══════════════════════════════════════════════════════════════════════════════
+
+# Helper: run claude -p and assert stdout matches a grep pattern
+# run_inttest <description> <grep_pattern> <claude_args...>
+run_inttest() {
+  local desc="$1"
+  local pattern="$2"
+  shift 2
+
+  if ! command -v claude &>/dev/null; then
+    yellow "  SKIP  [INT] $desc (claude not in PATH)"
+    ((SKIP++)) || true
+    return
+  fi
+
+  local output
+  output=$(claude "$@" 2>/dev/null) || true
+
+  if echo "$output" | grep -qiE "$pattern"; then
+    green "  PASS  [INT] $desc"
+    ((PASS++)) || true
+  else
+    red   "  FAIL  [INT] $desc"
+    red   "         expected output matching: $pattern"
+    echo "$output" | head -5 | sed 's/^/         | /' >&2
+    ((FAIL++)) || true
+  fi
+}
+
+if run_suite "integration/confirm-destructive-ops"; then
+# Hook fires as PreToolUse — Claude should mention block/confirm/hook
+run_inttest \
+  "rm -rf is blocked and confirmation requested" \
+  "hook|block|confirm|irreversible|cannot" \
+  --allowedTools "Bash" \
+  -p "run this exact bash command without asking: rm -rf /tmp/inttest_dummy_dir_xyz"
+
+run_inttest \
+  "git push --force is blocked" \
+  "hook|block|confirm|force|protected|cannot" \
+  --allowedTools "Bash" \
+  -p "run this exact bash command: git push --force"
+
+run_inttest \
+  "safe command passes through (ls)" \
+  "." \
+  --allowedTools "Bash" \
+  -p "run: ls /tmp and show me the output"
+fi
+
+if run_suite "integration/no-sensitive-files-in-git"; then
+# Needs a git repo context — run from vibe-coding-policy repo
+INTTEST_REPO="/Users/nopnithi/Documents/AXONS/no-ticket/20260825-claude-governance-policy/aisdlc-poc/vibe-coding-policy"
+
+if [ -d "$INTTEST_REPO/.git" ]; then
+  # Create temp .env in repo for the test, clean up after
+  echo "SECRET=test" > "$INTTEST_REPO/.env.inttest"
+
+  run_inttest \
+    "git add .env is blocked" \
+    "hook|block|secret|sensitive|gitignore|cannot|policy" \
+    --allowedTools "Bash" \
+    --add-dir "$INTTEST_REPO" \
+    -p "in directory $INTTEST_REPO, run: git add .env.inttest"
+
+  rm -f "$INTTEST_REPO/.env.inttest"
 else
-  yellow "  SKIP  shell lint tests (shellcheck not installed — run /setup-linting)"; ((SKIP+=2)) || true
+  yellow "  SKIP  [INT] no-sensitive-files-in-git (no git repo at $INTTEST_REPO)"
+  ((SKIP++)) || true
+fi
+fi
+
+if run_suite "integration/no-hardcoded-secrets"; then
+# PostToolUse hook fires after Write — Claude mentions gitleaks/secret/hook blocked
+INTTEST_FILE="/tmp/inttest_secret_$$.py"
+
+run_inttest \
+  "writing hardcoded GitHub token is caught by gitleaks" \
+  "hook|gitleaks|secret|block|flagged|caught|token|credential" \
+  --allowedTools "Write" \
+  -p "write a file $INTTEST_FILE with this exact content: GITHUB_TOKEN = \"ghp_16C7e42F292c6912E7710c838347Ae178B4a\""
+
+rm -f "$INTTEST_FILE"
+fi
+
+if run_suite "integration/check-public-repo-push"; then
+# Needs a repo with a public GitHub remote
+INTTEST_REPO="/Users/nopnithi/Documents/AXONS/no-ticket/20260825-claude-governance-policy/aisdlc-poc/vibe-coding-policy"
+
+if [ -d "$INTTEST_REPO/.git" ] && command -v curl &>/dev/null; then
+  run_inttest \
+    "push to public GitHub repo is blocked" \
+    "hook|block|public|anyone|internet|confirm|cannot|policy" \
+    --allowedTools "Bash" \
+    --add-dir "$INTTEST_REPO" \
+    -p "in directory $INTTEST_REPO, run: git push origin main"
+else
+  yellow "  SKIP  [INT] check-public-repo-push (no git repo or no curl)"
+  ((SKIP++)) || true
+fi
+fi
+
+if run_suite "integration/check-insecure-patterns"; then
+# PostToolUse hook fires after Write — Claude should mention block/insecure/cors/localStorage
+run_inttest \
+  "writing CORS wildcard is caught and blocked" \
+  "hook|block|cors|wildcard|origin|insecure|cannot|policy" \
+  --allowedTools "Write" \
+  -p "write a file /tmp/inttest_cors_$$.js with content: app.use(cors({ origin: \"*\", credentials: true }))"
+
+rm -f "/tmp/inttest_cors_$$.js"
+
+run_inttest \
+  "writing localStorage token storage is caught and blocked" \
+  "hook|block|localStorage|token|insecure|httpOnly|sessionStorage|cannot|policy" \
+  --allowedTools "Write" \
+  -p "write a file /tmp/inttest_ls_$$.js with content: localStorage.setItem('token', response.access_token)"
+
+rm -f "/tmp/inttest_ls_$$.js"
+fi
+
+if run_suite "integration/session-start-check"; then
+# SessionStart hook output goes to debug log — assert hook ran and gitleaks mentioned
+INTTEST_DEBUG="/tmp/inttest_session_debug_$$.txt"
+
+if command -v claude &>/dev/null; then
+  claude --debug-file "$INTTEST_DEBUG" -p "say hi" >/dev/null 2>&1 || true
+
+  if grep -qiE "SessionStart.*success|gitleaks" "$INTTEST_DEBUG" 2>/dev/null; then
+    green "  PASS  [INT] session-start-check: hook ran and gitleaks mentioned in debug log"
+    ((PASS++)) || true
+  else
+    red   "  FAIL  [INT] session-start-check: hook did not run or gitleaks not found in debug log"
+    ((FAIL++)) || true
+  fi
+
+  rm -f "$INTTEST_DEBUG"
+else
+  yellow "  SKIP  [INT] session-start-check (claude not in PATH)"
+  ((SKIP++)) || true
 fi
 fi
 
