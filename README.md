@@ -24,7 +24,13 @@
 | **Project** | `.claude/settings.json` (commit ขึ้น git) | ทุกคนที่ clone repo นี้ |
 | **Local** | `.claude/settings.local.json` (gitignored) | แค่คุณคนเดียวใน repo นี้ |
 
-`/vibe-coding-policy:setup` จะพา User ผ่าน installation ที่เหลือทั้งหมด — copy hooks, copy skills, และติดตั้ง gitleaks ให้
+`/vibe-coding-policy:setup` จะพา User ผ่าน installation ที่เหลือทั้งหมด โดย Claude จะ:
+
+1. ตรวจสอบ hooks, skills, และ settings ที่ bundled มากับ plugin
+2. ถามว่าต้องการติดตั้ง global (`~/.claude/`) หรือเฉพาะ project นี้
+3. ถามว่าต้องการ copy `CLAUDE.md` ลง project ไหม
+4. ตรวจสอบว่า `gitleaks` ติดตั้งอยู่ไหม และเสนอติดตั้งให้ถ้ายังไม่มี
+5. แสดง diff ก่อน merge กับ `settings.json` ที่มีอยู่แล้ว
 
 ---
 
