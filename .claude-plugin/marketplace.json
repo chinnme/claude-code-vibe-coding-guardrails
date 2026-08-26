@@ -1,0 +1,18 @@
+{
+  "name": "chinnme",
+  "description": "Plugins by chinnme for Claude Code teams.",
+  "owner": {
+    "name": "chinnme",
+    "url": "https://github.com/chinnme"
+  },
+  "plugins": [
+    {
+      "name": "vibe-coding-policy",
+      "displayName": "Vibe Coding Policy",
+      "description": "Security policy for non-developer vibe coding teams. Includes secret scanning (gitleaks required), sensitive file protection, public repo push guard, auto-linting, and guided setup.",
+      "source": ".",
+      "category": "security",
+      "keywords": ["security", "policy", "gitleaks", "hooks", "non-dev", "vibe-coding"]
+    }
+  ]
+}

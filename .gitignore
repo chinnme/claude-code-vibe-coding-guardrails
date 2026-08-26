@@ -1,0 +1,7 @@
+# Personal Claude notes — never commit
+CLAUDE.local.md
+.claude/settings.local.json
+
+# OS files
+.DS_Store
+Thumbs.db
