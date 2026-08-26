@@ -1,7 +1,7 @@
 {
   "name": "vibe-coding-policy",
   "description": "Security policy for non-developer vibe coding teams. Enforces secret scanning (gitleaks), blocks sensitive file commits, prevents accidental public repo pushes, and auto-lints code.",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "author": {
     "name": "chinnme",
     "url": "https://github.com/chinnme"
@@ -9,5 +9,7 @@
   "homepage": "https://github.com/chinnme/claude-code-vibe-coding-policy",
   "repository": "https://github.com/chinnme/claude-code-vibe-coding-policy",
   "license": "MIT",
-  "keywords": ["security", "policy", "vibe-coding", "gitleaks", "hooks", "non-dev"]
+  "keywords": ["security", "policy", "vibe-coding", "gitleaks", "hooks", "non-dev"],
+  "skills": ".claude/skills",
+  "hooks": ".claude/settings.json"
 }
