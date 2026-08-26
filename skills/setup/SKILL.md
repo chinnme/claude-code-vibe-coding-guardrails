@@ -1,16 +1,16 @@
 ---
 name: setup
 description: >
-  Install the Vibe Coding Guardrail on this machine — copies hooks, skills,
+  Install the Vibe Coding Guardrails on this machine — copies hooks, skills,
   and settings to the right place, sets permissions, and installs gitleaks.
   Use when: a new team member wants to set up the policy, or the user asks
   "how do I install the policy?" or "set up security for me".
 allowed-tools: Bash(chmod *) Bash(cp *) Bash(mkdir *) Bash(brew *) Bash(apt *) Bash(gitleaks *) Bash(ls *) Bash(echo *) Bash(uname *) Bash(command *)
 ---
 
-# Vibe Coding Guardrail — Setup Assistant
+# Vibe Coding Guardrails — Setup Assistant
 
-Help the user install the Vibe Coding Guardrail on their machine.
+Help the user install the Vibe Coding Guardrails on their machine.
 Work through the steps below in order. Be friendly and explain what you're doing at each step.
 
 The policy files are bundled with this plugin. Reference them using `${CLAUDE_SKILL_DIR}/../..` which resolves to the plugin root containing `hooks/`, `skills/`, etc.
@@ -68,7 +68,7 @@ cp -r ${POLICY_DIR}/skills/new-project ${INSTALL_TARGET}/skills/
 cp -r ${POLICY_DIR}/skills/check-before-deploy ${INSTALL_TARGET}/skills/
 ```
 
-Note: the `setup` skill is intentionally not copied — it's already available via the plugin as `/vibe-coding-guardrail:setup`.
+Note: the `setup` skill is intentionally not copied — it's already available via the plugin as `/vibe-coding-guardrails:setup`.
 
 ---
 
@@ -148,7 +148,7 @@ echo "=== settings.json ===" && (ls ${INSTALL_TARGET}/settings.json 2>/dev/null 
 ## Step 8 — Summary
 
 ```
-✅ Vibe Coding Guardrail installed!
+✅ Vibe Coding Guardrails installed!
 
 Installed to: ${INSTALL_TARGET}
 
@@ -160,13 +160,13 @@ Hooks active (automatic — no action needed):
 - Blocks CORS wildcard and localStorage token storage
 
 Skills available:
-- /vibe-coding-guardrail:new-project        — bootstrap a new project safely
-- /vibe-coding-guardrail:check-secrets      — scan for secrets before committing
-- /vibe-coding-guardrail:check-before-deploy — run full pre-deploy security checklist
+- /vibe-coding-guardrails:new-project        — bootstrap a new project safely
+- /vibe-coding-guardrails:check-secrets      — scan for secrets before committing
+- /vibe-coding-guardrails:check-before-deploy — run full pre-deploy security checklist
 
 Next steps:
 1. Run /reload-plugins or restart Claude Code for hooks to take effect
-2. Run /vibe-coding-guardrail:new-project when starting a new project
+2. Run /vibe-coding-guardrails:new-project when starting a new project
 3. Customize CLAUDE.md with your project's build commands and known issues
 ```
 

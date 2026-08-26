@@ -1,8 +1,8 @@
-# Vibe Coding Guardrail
+# Vibe Coding Guardrails
 
 บริษัทหลายแห่งทำข้อมูลหลุดไปเพราะ Developer เผลอ Commit `API_KEY` หรือไฟล์ที่มีข้อมูลสำคัญขึ้น Public Repository เช่น GitHub — แต่ปัญหาใหญ่กว่าคือตอนนี้ทีมที่ไม่ใช่ Developer ก็ใช้ AI Coding Agent เขียน Code ได้แล้ว และ Agent ที่ไม่มี Guardrail ก็ทำผิดพลาดแบบเดิมได้เหมือนกัน
 
-**Vibe Coding Guardrail** คือชุด Policy เริ่มต้นสำหรับ Claude Code ที่ออกแบบมาให้ Non-Developer สามารถใช้งานได้อย่างปลอดภัย เพราะ Policy ทำหน้าที่ Enforce แทนคนโดยอัตโนมัติ
+**Vibe Coding Guardrails** คือชุด Policy เริ่มต้นสำหรับ Claude Code ที่ออกแบบมาให้ Non-Developer สามารถใช้งานได้อย่างปลอดภัย เพราะ Policy ทำหน้าที่ Enforce แทนคนโดยอัตโนมัติ
 
 ---
 
@@ -11,9 +11,9 @@
 ถ้าอยากข้ามรายละเอียดและเริ่มใช้งานเลย ทำ 3 ขั้นตอนนี้ใน Claude Code:
 
 ```
-/plugin marketplace add chinnme/claude-code-vibe-coding-guardrail
-/plugin install vibe-coding-guardrail@chinnme
-/vibe-coding-guardrail:setup
+/plugin marketplace add chinnme/claude-code-vibe-coding-guardrails
+/plugin install vibe-coding-guardrails@chinnme
+/vibe-coding-guardrails:setup
 ```
 
 ตอน `/plugin install` Claude Code จะถามว่าจะติดตั้ง Scope ไหน — เลือก **"Install for you (user scope)"** เพื่อให้ Policy ทำงานกับทุก Project บนเครื่อง:
@@ -24,7 +24,7 @@
 | **Project** | `.claude/settings.json` (commit ขึ้น git) | ทุกคนที่ clone repo นี้ |
 | **Local** | `.claude/settings.local.json` (gitignored) | แค่คุณคนเดียวใน repo นี้ |
 
-`/vibe-coding-guardrail:setup` จะพา User ผ่าน installation ที่เหลือทั้งหมด โดย Claude จะ:
+`/vibe-coding-guardrails:setup` จะพา User ผ่าน installation ที่เหลือทั้งหมด โดย Claude จะ:
 
 1. ตรวจสอบ hooks, skills, และ settings ที่ bundled มากับ plugin
 2. ถามว่าต้องการติดตั้ง global (`~/.claude/`) หรือเฉพาะ project นี้
@@ -39,7 +39,7 @@
 ภาพรวมของไฟล์ทั้งหมด:
 
 ```
-vibe-coding-guardrail/
+vibe-coding-guardrails/
 ├── CLAUDE.md                                  ← กฎที่ Claude อ่านทุก Session
 ├── settings.json                              ← Wire Hook ทั้งหมด (template)
 ├── hooks/                                     ← Hook Scripts (source)
@@ -51,10 +51,10 @@ vibe-coding-guardrail/
 │   ├── check-insecure-patterns.sh
 │   └── test-hooks.sh                          ← Unit + Integration Test Suite
 ├── skills/                                    ← Skill Definitions (source)
-│   ├── setup/                                 ← /vibe-coding-guardrail:setup
-│   ├── new-project/                           ← /vibe-coding-guardrail:new-project
-│   ├── check-secrets/                         ← /vibe-coding-guardrail:check-secrets
-│   └── check-before-deploy/                   ← /vibe-coding-guardrail:check-before-deploy
+│   ├── setup/                                 ← /vibe-coding-guardrails:setup
+│   ├── new-project/                           ← /vibe-coding-guardrails:new-project
+│   ├── check-secrets/                         ← /vibe-coding-guardrails:check-secrets
+│   └── check-before-deploy/                   ← /vibe-coding-guardrails:check-before-deploy
 ├── .claude-plugin/
 │   ├── plugin.json                            ← Plugin identity
 │   └── marketplace.json                       ← Marketplace catalog
@@ -125,23 +125,23 @@ Hook คือ Script ที่ Claude Code รันโดยอัตโนม
 
 | พิมพ์ | ใช้เมื่อไหร่ | Claude จะทำอะไร |
 |---|---|---|
-| `/vibe-coding-guardrail:setup` | ครั้งแรกที่ติดตั้ง | Copy hooks, skills, settings, และ install gitleaks ลงเครื่อง |
-| `/vibe-coding-guardrail:new-project` | เริ่ม project ใหม่ทุกครั้ง | สร้าง `.gitignore`, `.env.example`, Init Git ก่อนเขียน Code บรรทัดแรก |
-| `/vibe-coding-guardrail:check-secrets` | ก่อน commit | Scan ทุกไฟล์ที่แก้ใน Session นี้ + ตรวจว่า `.gitignore` ครอบคลุมพอไหม |
-| `/vibe-coding-guardrail:check-before-deploy` | ก่อน deploy / ก่อน push ขึ้น public | รัน Pre-Deploy Checklist ครบ 4 ด้าน: git tracking, `.gitignore`, insecure patterns, และ gitleaks scan |
+| `/vibe-coding-guardrails:setup` | ครั้งแรกที่ติดตั้ง | Copy hooks, skills, settings, และ install gitleaks ลงเครื่อง |
+| `/vibe-coding-guardrails:new-project` | เริ่ม project ใหม่ทุกครั้ง | สร้าง `.gitignore`, `.env.example`, Init Git ก่อนเขียน Code บรรทัดแรก |
+| `/vibe-coding-guardrails:check-secrets` | ก่อน commit | Scan ทุกไฟล์ที่แก้ใน Session นี้ + ตรวจว่า `.gitignore` ครอบคลุมพอไหม |
+| `/vibe-coding-guardrails:check-before-deploy` | ก่อน deploy / ก่อน push ขึ้น public | รัน Pre-Deploy Checklist ครบ 4 ด้าน: git tracking, `.gitignore`, insecure patterns, และ gitleaks scan |
 
 ### Flow ที่แนะนำ
 
 ```
 เริ่ม project ใหม่
      ↓
-/vibe-coding-guardrail:new-project
+/vibe-coding-guardrails:new-project
      ↓
 เขียน code ตามปกติ (hooks ทำงานเองทุก file save)
      ↓
-ก่อน commit → /vibe-coding-guardrail:check-secrets  (optional แต่แนะนำ)
+ก่อน commit → /vibe-coding-guardrails:check-secrets  (optional แต่แนะนำ)
      ↓
-ก่อน deploy → /vibe-coding-guardrail:check-before-deploy  (บังคับ)
+ก่อน deploy → /vibe-coding-guardrails:check-before-deploy  (บังคับ)
 ```
 
 Hook ทำงานเองโดยอัตโนมัติตลอดเวลา ไม่ต้องสั่ง Skill ช่วยตรวจในระดับที่กว้างกว่า Hook สามารถตรวจสอบหลายไฟล์พร้อมกัน และให้คำแนะนำ step-by-step ได้
