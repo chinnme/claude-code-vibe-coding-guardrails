@@ -7,8 +7,8 @@
   },
   "plugins": [
     {
-      "name": "vibe-coding-policy",
-      "displayName": "Vibe Coding Policy",
+      "name": "vibe-coding-guardrail",
+      "displayName": "Vibe Coding Guardrail",
       "description": "Security policy for non-developer vibe coding teams. Includes secret scanning (gitleaks required), sensitive file protection, public repo push guard, auto-linting, and guided setup.",
       "source": ".",
       "category": "security",

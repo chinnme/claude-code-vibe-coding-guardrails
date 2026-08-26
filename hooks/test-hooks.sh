@@ -427,8 +427,8 @@ run_inttest \
 fi
 
 if run_suite "integration/no-sensitive-files-in-git"; then
-# Needs a git repo context — run from vibe-coding-policy repo
-INTTEST_REPO="/Users/nopnithi/Documents/AXONS/no-ticket/20260825-claude-governance-policy/aisdlc-poc/vibe-coding-policy"
+# Needs a git repo context — run from vibe-coding-guardrail repo
+INTTEST_REPO="/Users/nopnithi/Documents/AXONS/no-ticket/20260825-claude-governance-policy/aisdlc-poc/vibe-coding-guardrail"
 
 if [ -d "$INTTEST_REPO/.git" ]; then
   # Create temp .env in repo for the test, clean up after
@@ -463,7 +463,7 @@ fi
 
 if run_suite "integration/check-public-repo-push"; then
 # Needs a repo with a public GitHub remote
-INTTEST_REPO="/Users/nopnithi/Documents/AXONS/no-ticket/20260825-claude-governance-policy/aisdlc-poc/vibe-coding-policy"
+INTTEST_REPO="/Users/nopnithi/Documents/AXONS/no-ticket/20260825-claude-governance-policy/aisdlc-poc/vibe-coding-guardrail"
 
 if [ -d "$INTTEST_REPO/.git" ] && command -v curl &>/dev/null; then
   run_inttest \
