@@ -9,10 +9,10 @@
     {
       "name": "vibe-coding-guardrails",
       "displayName": "Vibe Coding Guardrails",
-      "description": "Security policy for non-developer vibe coding teams. Includes secret scanning (gitleaks required), sensitive file protection, public repo push guard, auto-linting, and guided setup.",
+      "description": "Security guardrails for non-developer vibe coding teams. Enforces secret scanning (gitleaks), blocks sensitive file commits, prevents public repo pushes, detects insecure web patterns, and includes guided setup and pre-deploy checklist.",
       "source": ".",
       "category": "security",
-      "keywords": ["security", "policy", "gitleaks", "hooks", "non-dev", "vibe-coding"]
+      "keywords": ["security", "guardrails", "gitleaks", "hooks", "non-dev", "vibe-coding", "insecure-patterns"]
     }
   ]
 }
