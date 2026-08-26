@@ -16,7 +16,7 @@
 /vibe-coding-guardrails:setup
 ```
 
-ตอน `/plugin install` Claude Code จะถามว่าจะติดตั้ง Scope ไหน — เลือก **"Install for you (user scope)"** เพื่อให้ Policy ทำงานกับทุก Project บนเครื่อง:
+**ขั้นตอนที่ 1–2** เพิ่ม marketplace และติดตั้ง plugin ตอน `/plugin install` Claude Code จะถามว่าจะติดตั้ง Scope ไหน — เลือก **"Install for you (user scope)"** เพื่อให้ Guardrails ทำงานกับทุก Project บนเครื่อง:
 
 | Scope | เก็บที่ | ใครได้ใช้ |
 |---|---|---|
@@ -24,13 +24,15 @@
 | **Project** | `.claude/settings.json` (commit ขึ้น git) | ทุกคนที่ clone repo นี้ |
 | **Local** | `.claude/settings.local.json` (gitignored) | แค่คุณคนเดียวใน repo นี้ |
 
-`/vibe-coding-guardrails:setup` จะพา User ผ่าน installation ที่เหลือทั้งหมด โดย Claude จะ:
+**ขั้นตอนที่ 3** รัน `/vibe-coding-guardrails:setup` — Claude จะพาผ่าน installation แบบ interactive โดยถามทีละขั้น:
 
-1. ตรวจสอบ hooks, skills, และ settings ที่ bundled มากับ plugin
-2. ถามว่าต้องการติดตั้ง global (`~/.claude/`) หรือเฉพาะ project นี้
-3. ถามว่าต้องการ copy `CLAUDE.md` ลง project ไหม
-4. ตรวจสอบว่า `gitleaks` ติดตั้งอยู่ไหม และเสนอติดตั้งให้ถ้ายังไม่มี
-5. แสดง diff ก่อน merge กับ `settings.json` ที่มีอยู่แล้ว
+1. **ติดตั้ง global หรือเฉพาะ project นี้?** — เลือก "All my projects" ถ้าอยากให้ทำงานทุก project บนเครื่อง
+2. **Copy hooks และ skills** ไปยังที่ที่เลือก
+3. **Merge settings.json** — ถ้ามี settings.json อยู่แล้ว Claude จะแสดง diff ให้ confirm ก่อน ไม่ได้ทับทันที
+4. **Copy CLAUDE.md** ลง project ปัจจุบัน (optional)
+5. **ตรวจและติดตั้ง gitleaks** ถ้ายังไม่มีในเครื่อง
+
+หลัง setup เสร็จ รัน `/reload-plugins` หรือ restart Claude Code เพื่อให้ hooks เริ่มทำงาน
 
 ---
 
