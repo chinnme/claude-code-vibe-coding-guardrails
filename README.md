@@ -41,24 +41,27 @@
 ```
 vibe-coding-policy/
 ├── CLAUDE.md                                  ← กฎที่ Claude อ่านทุก Session
+├── settings.json                              ← Wire Hook ทั้งหมด (template)
+├── hooks/                                     ← Hook Scripts (source)
+│   ├── session-start-check.sh
+│   ├── no-hardcoded-secrets.sh
+│   ├── no-sensitive-files-in-git.sh
+│   ├── confirm-destructive-ops.sh
+│   ├── check-public-repo-push.sh
+│   ├── check-insecure-patterns.sh
+│   └── test-hooks.sh                          ← Unit + Integration Test Suite
+├── skills/                                    ← Skill Definitions (source)
+│   ├── setup/                                 ← /vibe-coding-policy:setup
+│   ├── new-project/                           ← /vibe-coding-policy:new-project
+│   ├── check-secrets/                         ← /vibe-coding-policy:check-secrets
+│   └── check-before-deploy/                   ← /vibe-coding-policy:check-before-deploy
 ├── .claude-plugin/
 │   ├── plugin.json                            ← Plugin identity
 │   └── marketplace.json                       ← Marketplace catalog
-└── .claude/
-    ├── settings.json                          ← Wire Hook ทั้งหมด
-    ├── skills/                                ← คำสั่งพิเศษที่พิมพ์ใน Claude Code ได้
-    │   ├── setup/                             ← /vibe-coding-policy:setup
-    │   ├── new-project/                       ← /vibe-coding-policy:new-project
-    │   ├── check-secrets/                     ← /vibe-coding-policy:check-secrets
-    │   └── setup-linting/                     ← /vibe-coding-policy:setup-linting
-    └── hooks/                                 ← ทำงานอัตโนมัติ ไม่ต้องสั่ง
-        ├── session-start-check.sh
-        ├── no-hardcoded-secrets.sh
-        ├── no-sensitive-files-in-git.sh
-        ├── confirm-destructive-ops.sh
-        ├── check-public-repo-push.sh
-        ├── auto-detect-and-lint.sh
-        └── test-hooks.sh
+└── .claude/                                   ← Bundled copy (ติดตั้งผ่าน plugin)
+    ├── settings.json
+    ├── hooks/
+    └── skills/
 ```
 
 Policy แบ่งเป็นสองส่วนหลัก:
@@ -71,7 +74,7 @@ Policy แบ่งเป็นสองส่วนหลัก:
 
 `CLAUDE.md` คือไฟล์ที่ Claude Code โหลดเข้า Context ทุกครั้งที่เปิด Session เหมือนกับ Brief ที่ให้พนักงานใหม่อ่านวันแรก — Claude จะรู้ว่ามีกฎอะไรบ้างและพยายามทำตาม
 
-ใน Template นี้มีกฎสำคัญ 4 กลุ่ม:
+ใน Template นี้มีกฎสำคัญ 5 กลุ่ม:
 
 1. **Security Rules** — ห้าม Hardcode Secret, ต้องมี `.env` ใน `.gitignore`, ห้าม Push ตรงไป `main`, ห้าม Push ไป Public Repo โดยไม่ยืนยัน
 
@@ -79,7 +82,9 @@ Policy แบ่งเป็นสองส่วนหลัก:
 
 3. **Code Rules** — ห้าม Suppress Error ด้วย `@ts-ignore` หรือ `eslint-disable`, ห้าม Log ข้อมูลส่วนตัว, ห้าม Bump Dependency โดยไม่บอก
 
-4. **Before Saying Done** — ต้องรัน Test ก่อน, ตรวจว่าไม่มี Secret ใน File ที่แก้, แล้ว Summarize ว่าทำอะไรไปบ้าง
+4. **API and Web Security Rules** — ห้าม CORS Wildcard, บังคับ HTTPS, ห้าม Token ใน `localStorage`, ห้ามเขียน Authentication เอง, ห้าม Admin Credential อยู่ฝั่ง Client
+
+5. **Before Saying Done** — ต้องรัน Test ก่อน, ตรวจว่าไม่มี Secret ใน File ที่แก้, แล้ว Summarize ว่าทำอะไรไปบ้าง
 
 > **ข้อสำคัญ:** CLAUDE.md คือ Advisory ไม่ใช่ Enforcement — Claude อ่านแล้ว *พยายาม* ทำตาม แต่ไม่มี Guarantee 100% Hook เท่านั้นที่ Enforce จริง
 
@@ -110,55 +115,68 @@ Hook คือ Script ที่ Claude Code รันโดยอัตโนม
 
 **`no-hardcoded-secrets.sh`** — หลังแก้ไฟล์ทุกครั้ง Hook จะ Pipe เนื้อหาไฟล์เข้า `gitleaks` — ถ้าเจอ Secret จะ Block ทันที (exit 2) ถ้าไม่มี `gitleaks` ในเครื่องก็ Block เช่นกัน
 
-**`auto-detect-and-lint.sh`** — ดูนามสกุลไฟล์แล้ว Detect ว่าเป็นภาษาอะไร แล้วรัน Linter ที่เหมาะสมให้อัตโนมัติ ถ้า Linter ไม่ได้ติดตั้ง → ข้ามโดยไม่ Error (Soft Fail)
+**`check-insecure-patterns.sh`** — ตรวจ Pattern ที่ไม่ปลอดภัยในโค้ดที่ gitleaks จับไม่ได้ ได้แก่ CORS Wildcard (`origin: "*"`) และการเก็บ Token ใน `localStorage`
 
 ---
 
 ## Skills — คำสั่งพิเศษที่พิมพ์ตรงๆ ใน Claude Code
 
-นอกจาก Hook ที่ทำงานเองแล้ว ยังมี Skill ที่เรียกใช้ได้ตามต้องการ และ Claude จะ Invoke Skill เหล่านี้เองด้วยถ้าเห็นว่า Context เหมาะสม
+นอกจาก Hook ที่ทำงานเองแล้ว ยังมี Skill ที่เรียกใช้ได้ตามต้องการ Claude จะ Invoke Skill เหล่านี้เองด้วยถ้าเห็นว่า Context เหมาะสม — หรือจะพิมพ์ตรงๆ ก็ได้
 
-| พิมพ์ | Claude จะทำอะไร |
-|---|---|
-| `/vibe-coding-policy:setup` | ติดตั้ง Policy ลงเครื่อง — copy hooks, skills, settings, และ install gitleaks |
-| `/vibe-coding-policy:new-project` | Setup Project ใหม่อย่างถูกต้อง — สร้าง `.gitignore`, `.env.example`, Init Git ก่อนเขียน Code บรรทัดแรก |
-| `/vibe-coding-policy:check-secrets` | Scan ทุกไฟล์ที่แก้ใน Session นี้อีกรอบ พร้อมตรวจว่า `.gitignore` ครอบคลุมพอไหม |
-| `/vibe-coding-policy:setup-linting` | อ่าน `intent.md` / `spec.md` เพื่อ Detect ภาษา แล้ว Guide การติดตั้ง Linter ที่ถูกต้องสำหรับ OS ของ User |
-
----
-
-## Linting — ทำงานอัตโนมัติหลัง Setup
-
-รัน `/vibe-coding-policy:setup-linting` ครั้งเดียวต่อ Project แล้ว `auto-detect-and-lint.sh` จะ Handle ส่วนที่เหลือให้ทุกครั้งที่ Claude แก้ไฟล์
-
-ภาษาที่รองรับ:
-
-| ภาษา | Linter | Formatter |
+| พิมพ์ | ใช้เมื่อไหร่ | Claude จะทำอะไร |
 |---|---|---|
-| Python (`.py`) | Ruff | Ruff |
-| JavaScript / TypeScript (`.js`, `.ts`, `.jsx`, `.tsx`) | Biome (Fallback: ESLint) | Biome |
-| HTML (`.html`) | HTMLHint | Prettier |
-| CSS / SCSS (`.css`, `.scss`) | Stylelint | Prettier |
-| Shell (`.sh`, `.bash`) | ShellCheck | shfmt |
+| `/vibe-coding-policy:setup` | ครั้งแรกที่ติดตั้ง | Copy hooks, skills, settings, และ install gitleaks ลงเครื่อง |
+| `/vibe-coding-policy:new-project` | เริ่ม project ใหม่ทุกครั้ง | สร้าง `.gitignore`, `.env.example`, Init Git ก่อนเขียน Code บรรทัดแรก |
+| `/vibe-coding-policy:check-secrets` | ก่อน commit | Scan ทุกไฟล์ที่แก้ใน Session นี้ + ตรวจว่า `.gitignore` ครอบคลุมพอไหม |
+| `/vibe-coding-policy:check-before-deploy` | ก่อน deploy / ก่อน push ขึ้น public | รัน Pre-Deploy Checklist ครบ 4 ด้าน: git tracking, `.gitignore`, insecure patterns, และ gitleaks scan |
+
+### Flow ที่แนะนำ
+
+```
+เริ่ม project ใหม่
+     ↓
+/vibe-coding-policy:new-project
+     ↓
+เขียน code ตามปกติ (hooks ทำงานเองทุก file save)
+     ↓
+ก่อน commit → /vibe-coding-policy:check-secrets  (optional แต่แนะนำ)
+     ↓
+ก่อน deploy → /vibe-coding-policy:check-before-deploy  (บังคับ)
+```
+
+Hook ทำงานเองโดยอัตโนมัติตลอดเวลา ไม่ต้องสั่ง Skill ช่วยตรวจในระดับที่กว้างกว่า Hook สามารถตรวจสอบหลายไฟล์พร้อมกัน และให้คำแนะนำ step-by-step ได้
 
 ---
 
 ## ทดสอบว่า Hook ทำงานถูกต้องไหม
 
-Policy นี้มี Test Suite ให้รันหลัง Copy ไปใช้งาน:
+Policy นี้มี Test Suite สองระดับ:
 
 ```bash
-# รัน Test ทุกอย่าง
+# รัน Unit + Integration Tests ทั้งหมด
 bash .claude/hooks/test-hooks.sh
+
+# รัน เฉพาะ Integration Tests (ใช้ claude -p จริง)
+bash .claude/hooks/test-hooks.sh integration
 
 # รัน Test เฉพาะ Hook ที่สนใจ
 bash .claude/hooks/test-hooks.sh confirm-destructive-ops
 bash .claude/hooks/test-hooks.sh check-public-repo-push
 ```
 
-Test ใช้ Full JSON Input Format ตาม Official Docs ของ Claude Code และมี Live Test กับ GitHub Repo จริง สำหรับ `check-public-repo-push.sh` — ต้องมี Internet
+### Unit Tests
+Pipe JSON Input เข้า Hook Script โดยตรง ตรวจว่า Exit Code ถูกต้อง ใช้ Full JSON Input Format ตาม Official Docs ของ Claude Code ไม่ต้องการ `claude` CLI
 
-ผ่านแล้ว 52 Tests บน Bash 3.2 (macOS System) และ Bash 5.3 (Linux Equivalent)
+### Integration Tests
+รัน `claude -p` จริงแล้วตรวจว่า Claude ตอบสนองต่อการ Block ถูกต้อง ครอบคลุมทุก Hook ต้องมี `claude` CLI และ `ANTHROPIC_API_KEY` ในเครื่อง
+
+| Test Type | จำนวน | ต้องการ |
+|---|---|---|
+| Unit | 56 | Bash 3.2+ |
+| Integration | 9 | claude CLI + API Key |
+| **รวม** | **67** | |
+
+Tests บาง Suite จะ SKIP ถ้า Linter ไม่ได้ติดตั้ง (ruff, shellcheck) — นับเป็น Expected ไม่ใช่ Failure
 
 ---
 

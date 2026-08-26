@@ -13,7 +13,7 @@ allowed-tools: Bash(chmod *) Bash(cp *) Bash(mkdir *) Bash(brew *) Bash(apt *) B
 Help the user install the Vibe Coding Policy on their machine.
 Work through the steps below in order. Be friendly and explain what you're doing at each step.
 
-The policy files are bundled with this plugin. Reference them using `${CLAUDE_SKILL_DIR}/../..` which resolves to the plugin root containing `.claude/hooks/`, `.claude/skills/`, etc.
+The policy files are bundled with this plugin. Reference them using `${CLAUDE_SKILL_DIR}/../..` which resolves to the plugin root containing `hooks/`, `skills/`, etc.
 
 Set this at the start:
 ```bash
@@ -44,12 +44,12 @@ Set `INSTALL_TARGET` based on their answer:
 ```bash
 mkdir -p ${INSTALL_TARGET}/hooks
 
-cp ${POLICY_DIR}/.claude/hooks/session-start-check.sh ${INSTALL_TARGET}/hooks/
-cp ${POLICY_DIR}/.claude/hooks/no-hardcoded-secrets.sh ${INSTALL_TARGET}/hooks/
-cp ${POLICY_DIR}/.claude/hooks/no-sensitive-files-in-git.sh ${INSTALL_TARGET}/hooks/
-cp ${POLICY_DIR}/.claude/hooks/confirm-destructive-ops.sh ${INSTALL_TARGET}/hooks/
-cp ${POLICY_DIR}/.claude/hooks/check-public-repo-push.sh ${INSTALL_TARGET}/hooks/
-cp ${POLICY_DIR}/.claude/hooks/auto-detect-and-lint.sh ${INSTALL_TARGET}/hooks/
+cp ${POLICY_DIR}/hooks/session-start-check.sh ${INSTALL_TARGET}/hooks/
+cp ${POLICY_DIR}/hooks/no-hardcoded-secrets.sh ${INSTALL_TARGET}/hooks/
+cp ${POLICY_DIR}/hooks/no-sensitive-files-in-git.sh ${INSTALL_TARGET}/hooks/
+cp ${POLICY_DIR}/hooks/confirm-destructive-ops.sh ${INSTALL_TARGET}/hooks/
+cp ${POLICY_DIR}/hooks/check-public-repo-push.sh ${INSTALL_TARGET}/hooks/
+cp ${POLICY_DIR}/hooks/check-insecure-patterns.sh ${INSTALL_TARGET}/hooks/
 
 chmod +x ${INSTALL_TARGET}/hooks/*.sh
 ```
@@ -63,11 +63,12 @@ Tell the user which hooks were copied.
 ```bash
 mkdir -p ${INSTALL_TARGET}/skills
 
-cp -r ${POLICY_DIR}/.claude/skills/check-secrets ${INSTALL_TARGET}/skills/
-cp -r ${POLICY_DIR}/.claude/skills/new-project ${INSTALL_TARGET}/skills/
-cp -r ${POLICY_DIR}/.claude/skills/setup-linting ${INSTALL_TARGET}/skills/
-cp -r ${POLICY_DIR}/.claude/skills/setup ${INSTALL_TARGET}/skills/
+cp -r ${POLICY_DIR}/skills/check-secrets ${INSTALL_TARGET}/skills/
+cp -r ${POLICY_DIR}/skills/new-project ${INSTALL_TARGET}/skills/
+cp -r ${POLICY_DIR}/skills/check-before-deploy ${INSTALL_TARGET}/skills/
 ```
+
+Note: the `setup` skill is intentionally not copied — it's already available via the plugin as `/vibe-coding-policy:setup`.
 
 ---
 
@@ -81,7 +82,7 @@ ls ${INSTALL_TARGET}/settings.json 2>/dev/null && echo "EXISTS" || echo "NOT_EXI
 
 **If NOT_EXISTS:** copy directly:
 ```bash
-cp ${POLICY_DIR}/.claude/settings.json ${INSTALL_TARGET}/settings.json
+cp ${POLICY_DIR}/settings.json ${INSTALL_TARGET}/settings.json
 ```
 
 **If EXISTS:** tell the user:
@@ -156,12 +157,12 @@ Hooks active (automatic — no action needed):
 - Blocks .env / .pem / .key from git commits
 - Blocks pushes to public GitHub repos
 - Blocks rm -rf, force push, production deploys
-- Auto-lints after file edits
+- Blocks CORS wildcard and localStorage token storage
 
 Skills available:
-- /vibe-coding-policy:new-project   — bootstrap a new project safely
-- /vibe-coding-policy:check-secrets — scan for secrets before committing
-- /vibe-coding-policy:setup-linting — install the right linter for your language
+- /vibe-coding-policy:new-project        — bootstrap a new project safely
+- /vibe-coding-policy:check-secrets      — scan for secrets before committing
+- /vibe-coding-policy:check-before-deploy — run full pre-deploy security checklist
 
 Next steps:
 1. Run /reload-plugins or restart Claude Code for hooks to take effect

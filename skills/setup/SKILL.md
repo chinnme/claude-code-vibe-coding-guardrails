@@ -49,7 +49,7 @@ cp ${POLICY_DIR}/hooks/no-hardcoded-secrets.sh ${INSTALL_TARGET}/hooks/
 cp ${POLICY_DIR}/hooks/no-sensitive-files-in-git.sh ${INSTALL_TARGET}/hooks/
 cp ${POLICY_DIR}/hooks/confirm-destructive-ops.sh ${INSTALL_TARGET}/hooks/
 cp ${POLICY_DIR}/hooks/check-public-repo-push.sh ${INSTALL_TARGET}/hooks/
-cp ${POLICY_DIR}/hooks/auto-detect-and-lint.sh ${INSTALL_TARGET}/hooks/
+cp ${POLICY_DIR}/hooks/check-insecure-patterns.sh ${INSTALL_TARGET}/hooks/
 
 chmod +x ${INSTALL_TARGET}/hooks/*.sh
 ```
@@ -65,7 +65,7 @@ mkdir -p ${INSTALL_TARGET}/skills
 
 cp -r ${POLICY_DIR}/skills/check-secrets ${INSTALL_TARGET}/skills/
 cp -r ${POLICY_DIR}/skills/new-project ${INSTALL_TARGET}/skills/
-cp -r ${POLICY_DIR}/skills/setup-linting ${INSTALL_TARGET}/skills/
+cp -r ${POLICY_DIR}/skills/check-before-deploy ${INSTALL_TARGET}/skills/
 ```
 
 Note: the `setup` skill is intentionally not copied — it's already available via the plugin as `/vibe-coding-policy:setup`.
@@ -157,12 +157,12 @@ Hooks active (automatic — no action needed):
 - Blocks .env / .pem / .key from git commits
 - Blocks pushes to public GitHub repos
 - Blocks rm -rf, force push, production deploys
-- Auto-lints after file edits
+- Blocks CORS wildcard and localStorage token storage
 
 Skills available:
-- /vibe-coding-policy:new-project   — bootstrap a new project safely
-- /vibe-coding-policy:check-secrets — scan for secrets before committing
-- /vibe-coding-policy:setup-linting — install the right linter for your language
+- /vibe-coding-policy:new-project        — bootstrap a new project safely
+- /vibe-coding-policy:check-secrets      — scan for secrets before committing
+- /vibe-coding-policy:check-before-deploy — run full pre-deploy security checklist
 
 Next steps:
 1. Run /reload-plugins or restart Claude Code for hooks to take effect

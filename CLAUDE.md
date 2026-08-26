@@ -53,28 +53,16 @@ Create a `.gitignore` with these entries as **the first step of every project**.
 
 ---
 
-## 🔍 Linting Commands
+## 🔒 API and Web Security Rules
 
-Add these after running `/setup-linting` — use only the languages your project actually uses:
-
-```
-# Python
-ruff check . && ruff format --check .
-
-# JavaScript / TypeScript
-npx biome check .
-
-# HTML
-npx htmlhint "**/*.html"
-
-# CSS / SCSS
-npx stylelint "**/*.css"
-
-# Shell scripts
-shellcheck scripts/*.sh
-```
-
-Run lint before reporting a task complete and show the output.
+- **Never** use `origin: "*"` in CORS configuration when credentials, tokens, or cookies are involved — always specify explicit allowed origins.
+- **Always** use HTTPS. Never generate `http://` URLs for any endpoint that handles credentials, tokens, or sensitive data.
+- **Always** add rate limiting to authentication endpoints (login, signup, password reset, token refresh).
+- **Never** store tokens or session credentials in `localStorage` — use `httpOnly` cookies or `sessionStorage` instead.
+- **Never** implement authentication from scratch — use an established auth provider (Supabase Auth, Firebase Auth, Auth0, AWS Cognito, etc.).
+- **Never** place admin, service-role, or any elevated-privilege credentials on the client side (browser, mobile app). These must only exist server-side, read from environment variables.
+- When using frameworks with public env prefixes (`NEXT_PUBLIC_`, `VITE_`, `REACT_APP_`), only place **public/anonymous** credentials behind these prefixes. Never place service keys or admin credentials behind a public prefix.
+- Any application that is deployed and has real users must be registered in the organization's asset inventory with a named owner before going live.
 
 ---
 
