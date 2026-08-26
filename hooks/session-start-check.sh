@@ -49,15 +49,16 @@ fi
 
 # ── gitleaks is installed — show version then auto-update ────────────────────
 CURRENT_VERSION=$(gitleaks version 2>/dev/null || echo "unknown")
-echo "✅ gitleaks $CURRENT_VERSION detected. Checking for updates..." >&2
 
 # Only attempt brew upgrade on macOS with brew available
 if command -v brew &>/dev/null; then
   # Run upgrade in background so session start is not delayed
-  (brew upgrade gitleaks 2>&1 | tail -1 | sed 's/^/   gitleaks update: /' >&2) &
+  (brew upgrade gitleaks 2>&1) &
   disown $! 2>/dev/null || true
-else
-  echo "   (auto-update skipped — brew not available; update manually)" >&2
 fi
+
+# Print plain text to stdout — SessionStart treats non-JSON stdout as
+# plain text that is both shown to the user and injected into Claude's context
+echo "✅ gitleaks $CURRENT_VERSION — secret scanning active"
 
 exit 0
