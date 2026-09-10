@@ -1,0 +1,80 @@
+# .gitleaks.toml — Vibe Coding Guardrails Custom Rules
+# ใช้ร่วมกับ gitleaks default rules
+# วางที่: ~/.claude/.gitleaks.toml (setup skill จะ copy ให้อัตโนมัติ)
+
+[extend]
+useDefault = true
+
+# ── Generic password assignment ──────────────────────────────────────────────
+# จับ password: "xxx" / passwd = "xxx" / pwd: "xxx"
+# ไม่จับ: your-password-here, example, placeholder, process.env
+[[rules]]
+id = "generic-password-assignment"
+description = "Hardcoded password in variable or config"
+regex = '''(?i)(?:password|passwd|pwd)\s*[:=]\s*["']([^"'$][^"']{4,})["']'''
+secretGroup = 1
+tags = ["secret", "password"]
+
+  [rules.allowlist]
+  regexes = [
+    '''(?i)(your|example|placeholder|dummy|sample|replace|change|fake|test|insert|add.your|xxx)''',
+  ]
+
+# ── Generic token/key variable ────────────────────────────────────────────────
+# จับ API_TOKEN = "xyz..." / secret_key: "abc..." / auth_key = "..."
+# ไม่จับ: process.env.X / ${X} / placeholders
+[[rules]]
+id = "hardcoded-token-variable"
+description = "Hardcoded token or API key in variable assignment"
+regex = '''(?i)(?:token|api[_-]?key|auth[_-]?key|secret[_-]?key|access[_-]?key)\s*[:=]\s*["']([A-Za-z0-9\-_./+]{20,})["']'''
+secretGroup = 1
+tags = ["secret", "token"]
+
+  [rules.allowlist]
+  regexes = [
+    '''(?i)^(your[_-]?|example[-_]?|placeholder|dummy|sample|replace[_-]?me|change[_-]?me|fake[_-]?|test[_-]?token|insert[_-]?|add[_-]?your)''',
+    '''process\.env''',
+    '''\$\{''',
+  ]
+
+# ── LINE Notify Bearer token ──────────────────────────────────────────────────
+# จับ LINE_TOKEN = "Bearer abc123..."
+[[rules]]
+id = "line-notify-bearer-token"
+description = "LINE Notify Bearer token hardcoded in variable"
+regex = '''(?i)(?:line[_-]?token|line[_-]?notify)\s*[:=]\s*["']Bearer\s+([A-Za-z0-9+/]{20,})["']'''
+secretGroup = 1
+tags = ["secret", "token", "line"]
+
+# ── Slack Incoming Webhook ────────────────────────────────────────────────────
+# จับ https://hooks.slack.com/services/T.../B.../XXX
+[[rules]]
+id = "slack-webhook-url"
+description = "Slack Incoming Webhook URL"
+regex = '''https://hooks\.slack\.com/services/[A-Z0-9]{8,}/[A-Z0-9]{8,}/[A-Za-z0-9]{20,}'''
+tags = ["secret", "webhook", "slack"]
+
+# ── Connection string with real password ──────────────────────────────────────
+# จับ postgresql://user:realpass@host / mysql://user:pass123@host
+# allowlist จัดการ ${}, :password@, :passwd@ แทน lookahead (Go regex ไม่รองรับ)
+[[rules]]
+id = "connection-string-with-password"
+description = "Database or service connection string with hardcoded password"
+regex = '''[a-zA-Z][a-zA-Z0-9+\-.]*://[^:@\s"']+:([^@\s"']{8,})@'''
+secretGroup = 1
+tags = ["secret", "connection-string"]
+
+  [rules.allowlist]
+  regexes = [
+    '''\$\{''',
+    '''(?i)^(password|passwd|pwd)$''',
+  ]
+
+# ── Global allowlist ──────────────────────────────────────────────────────────
+[allowlist]
+description = "ไม่ block environment variable references และ template placeholders"
+regexes = [
+  '''process\.env\.[A-Z_]+''',
+  '''\$\{[A-Z_][A-Z0-9_]*\}''',
+  '''os\.environ''',
+]

@@ -41,8 +41,15 @@ fi
 
 # ── scan file with gitleaks ───────────────────────────────────────────────────
 # Use 'gitleaks stdin' — pipe file content, no git context needed.
+# Use custom config if available at ~/.claude/.gitleaks.toml (installed by setup skill)
 # exit 0 = no leaks, exit 1 = leaks found
-SCAN_OUTPUT=$(cat "$FILE_PATH" | gitleaks stdin --no-banner 2>&1)
+
+GITLEAKS_CONFIG_FLAG=""
+if [ -f "$HOME/.claude/.gitleaks.toml" ]; then
+  GITLEAKS_CONFIG_FLAG="--config $HOME/.claude/.gitleaks.toml"
+fi
+
+SCAN_OUTPUT=$(cat "$FILE_PATH" | gitleaks stdin --no-banner $GITLEAKS_CONFIG_FLAG 2>&1)
 SCAN_EXIT=$?
 
 if [ "$SCAN_EXIT" -ne 0 ]; then
