@@ -4,7 +4,7 @@
 # Ref: https://code.claude.com/docs/en/hooks (PreToolUse / PostToolUse input schema)
 #
 # Usage: bash .claude/hooks/test-hooks.sh [hook-name-filter]
-# Example: bash .claude/hooks/test-hooks.sh confirm-destructive-ops
+# Example: bash .claude/hooks/test-hooks.sh check-public-repo-push
 
 set -uo pipefail
 
@@ -180,31 +180,7 @@ fi
 fi
 
 # ══════════════════════════════════════════════════════════════════════════════
-# 1. confirm-destructive-ops.sh  (PreToolUse / Bash)
-# ══════════════════════════════════════════════════════════════════════════════
-if run_suite "confirm-destructive-ops"; then
-HOOK="$HOOKS_DIR/confirm-destructive-ops.sh"
-
-run_test "safe: ls -la"            "0" "$(bash_json 'ls -la')"                       "$HOOK"
-run_test "safe: git status"        "0" "$(bash_json 'git status')"                   "$HOOK"
-run_test "safe: npm run build"     "0" "$(bash_json 'npm run build')"                "$HOOK"
-run_test "safe: npm test"          "0" "$(bash_json 'npm test')"                     "$HOOK"
-run_test "safe: git log"           "0" "$(bash_json 'git log --oneline')"            "$HOOK"
-run_test "safe: python app.py"     "0" "$(bash_json 'python app.py')"                "$HOOK"
-run_test "block: rm -rf"           "2" "$(bash_json 'rm -rf /tmp/test')"             "$HOOK"
-run_test "block: DROP TABLE"       "2" "$(bash_json 'psql -c "DROP TABLE users;"')"  "$HOOK"
-run_test "block: git push main"    "2" "$(bash_json 'git push origin main')"         "$HOOK"
-run_test "block: git push master"  "2" "$(bash_json 'git push origin master')"       "$HOOK"
-run_test "block: git reset --hard" "2" "$(bash_json 'git reset --hard HEAD~1')"      "$HOOK"
-run_test "block: git push --force" "2" "$(bash_json 'git push --force')"             "$HOOK"
-run_test "block: git push -f"      "2" "$(bash_json 'git push -f')"                  "$HOOK"
-run_test "block: vercel --prod"    "2" "$(bash_json 'vercel --prod')"                "$HOOK"
-run_test "block: firebase deploy"  "2" "$(bash_json 'firebase deploy')"              "$HOOK"
-run_test "edge: empty command"     "0" "$(bash_json '')"                             "$HOOK"
-fi
-
-# ══════════════════════════════════════════════════════════════════════════════
-# 2. no-sensitive-files-in-git.sh  (PreToolUse / Bash)
+# 1. no-sensitive-files-in-git.sh  (PreToolUse / Bash)
 # ══════════════════════════════════════════════════════════════════════════════
 if run_suite "no-sensitive-files-in-git"; then
 HOOK="$HOOKS_DIR/no-sensitive-files-in-git.sh"
@@ -226,7 +202,7 @@ run_test "block: git add settings.local.json" "2" "$(bash_json 'git add .claude/
 fi
 
 # ══════════════════════════════════════════════════════════════════════════════
-# 3. no-hardcoded-secrets.sh  (PostToolUse — now uses gitleaks)
+# 2. no-hardcoded-secrets.sh  (PostToolUse — now uses gitleaks)
 # ══════════════════════════════════════════════════════════════════════════════
 if run_suite "no-hardcoded-secrets"; then
 HOOK="$HOOKS_DIR/no-hardcoded-secrets.sh"
@@ -272,7 +248,7 @@ fi
 fi
 
 # ══════════════════════════════════════════════════════════════════════════════
-# 4. check-public-repo-push.sh  (PreToolUse / Bash)
+# 3. check-public-repo-push.sh  (PreToolUse / Bash)
 # ══════════════════════════════════════════════════════════════════════════════
 if run_suite "check-public-repo-push"; then
 HOOK="$HOOKS_DIR/check-public-repo-push.sh"
@@ -316,7 +292,7 @@ fi
 fi
 
 # ══════════════════════════════════════════════════════════════════════════════
-# 5. auto-detect-and-lint.sh  (PostToolUse)
+# 4. auto-detect-and-lint.sh  (PostToolUse)
 # ══════════════════════════════════════════════════════════════════════════════
 if run_suite "auto-detect-and-lint"; then
 HOOK="$HOOKS_DIR/auto-detect-and-lint.sh"

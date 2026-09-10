@@ -47,7 +47,6 @@ mkdir -p ${INSTALL_TARGET}/hooks
 cp ${POLICY_DIR}/hooks/session-start-check.sh ${INSTALL_TARGET}/hooks/
 cp ${POLICY_DIR}/hooks/no-hardcoded-secrets.sh ${INSTALL_TARGET}/hooks/
 cp ${POLICY_DIR}/hooks/no-sensitive-files-in-git.sh ${INSTALL_TARGET}/hooks/
-cp ${POLICY_DIR}/hooks/confirm-destructive-ops.sh ${INSTALL_TARGET}/hooks/
 cp ${POLICY_DIR}/hooks/check-public-repo-push.sh ${INSTALL_TARGET}/hooks/
 cp ${POLICY_DIR}/hooks/check-insecure-patterns.sh ${INSTALL_TARGET}/hooks/
 
@@ -60,15 +59,9 @@ Tell the user which hooks were copied.
 
 ## Step 3 — Install skills
 
-```bash
-mkdir -p ${INSTALL_TARGET}/skills
+Note: skills are bundled with the plugin and available as `/vibe-coding-guardrails:*` commands automatically. No manual copy needed.
 
-cp -r ${POLICY_DIR}/skills/check-secrets ${INSTALL_TARGET}/skills/
-cp -r ${POLICY_DIR}/skills/new-project ${INSTALL_TARGET}/skills/
-cp -r ${POLICY_DIR}/skills/check-before-deploy ${INSTALL_TARGET}/skills/
-```
-
-Note: the `setup` skill is intentionally not copied — it's already available via the plugin as `/vibe-coding-guardrails:setup`.
+The `setup` and `test` skills are available immediately after plugin installation.
 
 ---
 
@@ -156,17 +149,15 @@ Hooks active (automatic — no action needed):
 - Secret scanning on every file edit (gitleaks)
 - Blocks .env / .pem / .key from git commits
 - Blocks pushes to public GitHub repos
-- Blocks rm -rf, force push, production deploys
 - Blocks CORS wildcard and localStorage token storage
 
 Skills available:
-- /vibe-coding-guardrails:new-project        — bootstrap a new project safely
-- /vibe-coding-guardrails:check-secrets      — scan for secrets before committing
-- /vibe-coding-guardrails:check-before-deploy — run full pre-deploy security checklist
+- /vibe-coding-guardrails:setup  — install or reinstall the policy
+- /vibe-coding-guardrails:test   — verify all hooks are working correctly
 
 Next steps:
 1. Run /reload-plugins or restart Claude Code for hooks to take effect
-2. Run /vibe-coding-guardrails:new-project when starting a new project
+2. Run /vibe-coding-guardrails:test to verify hooks are working
 3. Customize CLAUDE.md with your project's build commands and known issues
 ```
 

@@ -1,35 +1,98 @@
 #!/usr/bin/env bash
 # Hook: check-public-repo-push.sh
 # Trigger: PreToolUse — runs before Claude executes any Bash command
-# Purpose: Block git push to public GitHub repositories
-#          Detection: unauthenticated curl returning HTTP 200 = public repo
+# Purpose: Block ALL pushes to PUBLIC GitHub repositories.
+#
+# Covers:
+#   git push [flags] [remote] [refspec]  — any flag combination
+#   gh pr create / gh release create / gh repo push / gh cs push
+#
+# Detection: unauthenticated HTTP GET to github.com/owner/repo
+#   HTTP 200 → public → BLOCK
+#   HTTP 404 / timeout / other → private or unknown → ALLOW
 
 set -uo pipefail
 
 INPUT=$(cat)
-COMMAND=$(echo "$INPUT" | python3 -c "
-import sys, json
-d = json.load(sys.stdin)
-print(d.get('tool_input', {}).get('command', ''))
-" 2>/dev/null || echo "")
 
-# Only intercept git push
-if ! echo "$COMMAND" | grep -qE '^git push'; then
+# ── Parse command + detect push type via Python (reliable on macOS) ───────────
+PARSE_RESULT=$(echo "$INPUT" | python3 -c "
+import sys, json, re, shlex
+
+d = json.load(sys.stdin)
+cmd = d.get('tool_input', {}).get('command', '')
+
+IS_PUSH = False
+REMOTE_HINT = ''  # empty = use 'origin'
+
+# ── git push detection ──────────────────────────────────────────────────────
+# Split on shell word boundaries conservatively: &&, ;, |, then scan each piece
+# We use a simple split approach — split on ;, &&, || to get sub-commands
+subcommands = re.split(r'[;&|]+', cmd)
+
+for sub in subcommands:
+    sub = sub.strip()
+    # Tokenize the sub-command (handles quoted args)
+    try:
+        tokens = shlex.split(sub)
+    except ValueError:
+        tokens = sub.split()
+
+    if not tokens:
+        continue
+
+    # Find 'git' followed by 'push' (possibly with env vars like GIT_SSH=... git push)
+    for i, tok in enumerate(tokens):
+        if tok == 'git' and i + 1 < len(tokens) and tokens[i+1] == 'push':
+            IS_PUSH = True
+            # Everything after 'push' in this token list
+            rest = tokens[i+2:]
+            # Skip flags (start with -) to find remote name
+            for r in rest:
+                if r.startswith('-'):
+                    continue
+                if ':' in r or '/' in r:
+                    break  # refspec, stop
+                REMOTE_HINT = r
+                break
+            break
+
+    if IS_PUSH:
+        break
+
+# ── gh push-type commands ───────────────────────────────────────────────────
+if not IS_PUSH:
+    GH_PUSH_PATTERNS = [
+        r'\bgh\s+pr\s+create\b',
+        r'\bgh\s+release\s+create\b',
+        r'\bgh\s+repo\s+push\b',
+        r'\bgh\s+cs\s+push\b',
+        r'\bgh\s+pr\s+edit\b.*--push',
+    ]
+    for pat in GH_PUSH_PATTERNS:
+        if re.search(pat, cmd):
+            IS_PUSH = True
+            break
+
+print('IS_PUSH=' + ('1' if IS_PUSH else '0'))
+print('REMOTE_HINT=' + REMOTE_HINT)
+" 2>/dev/null || echo -e "IS_PUSH=0\nREMOTE_HINT=")
+
+IS_PUSH=$(echo "$PARSE_RESULT" | grep '^IS_PUSH=' | cut -d= -f2)
+REMOTE_HINT=$(echo "$PARSE_RESULT" | grep '^REMOTE_HINT=' | cut -d= -f2-)
+
+if [ "${IS_PUSH:-0}" != "1" ]; then
   exit 0
 fi
 
-# Extract remote name (default: origin)
-REMOTE=$(echo "$COMMAND" | grep -oE 'git push\s+([a-zA-Z0-9_.-]+)' | awk '{print $3}')
-if [ -z "$REMOTE" ]; then
-  REMOTE="origin"
-fi
+# ── Resolve remote name ───────────────────────────────────────────────────────
+REMOTE="${REMOTE_HINT:-origin}"
+[ -z "$REMOTE" ] && REMOTE="origin"
 
-# Get remote URL
 REMOTE_URL=$(git remote get-url "$REMOTE" 2>/dev/null || echo "")
 
 if [ -z "$REMOTE_URL" ]; then
-  # Cannot determine remote — let it pass, git will handle the error
-  exit 0
+  exit 0  # No remote → let git/gh handle it
 fi
 
 # Only check GitHub URLs
@@ -37,36 +100,50 @@ if ! echo "$REMOTE_URL" | grep -qiE 'github\.com'; then
   exit 0
 fi
 
-# Parse owner/repo from URL (supports both HTTPS and SSH formats)
-# HTTPS: https://github.com/owner/repo.git
-# SSH:   git@github.com:owner/repo.git
-REPO_PATH=$(echo "$REMOTE_URL" | sed -E \
-  's#https://github\.com/([^/]+/[^/.]+)(\.git)?$#\1#;
-   s#git@github\.com:([^/]+/[^/.]+)(\.git)?$#\1#')
+# ── Parse owner/repo ──────────────────────────────────────────────────────────
+REPO_PATH=$(echo "$REMOTE_URL" | python3 -c "
+import sys, re
+url = sys.stdin.read().strip()
+# HTTPS: https://github.com/owner/repo[.git]
+m = re.match(r'https://github\.com/([^/?#]+/[^/?#.]+?)(?:\.git)?(?:[/?#].*)?$', url)
+if m:
+    print(m.group(1))
+    sys.exit(0)
+# SSH: git@github.com:owner/repo[.git]
+m = re.match(r'git@github\.com:([^/]+/[^/.]+?)(?:\.git)?$', url)
+if m:
+    print(m.group(1))
+    sys.exit(0)
+" 2>/dev/null || echo "")
 
-if [ -z "$REPO_PATH" ] || [ "$REPO_PATH" = "$REMOTE_URL" ]; then
-  # Could not parse — let it pass
-  exit 0
+if [ -z "$REPO_PATH" ]; then
+  exit 0  # Cannot parse — allow
 fi
 
-# Check if repo is public: unauthenticated curl returning 200 = public
+# ── Visibility check ──────────────────────────────────────────────────────────
+COMMAND=$(echo "$INPUT" | python3 -c "
+import sys, json
+d = json.load(sys.stdin)
+print(d.get('tool_input', {}).get('command', ''))
+" 2>/dev/null || echo "")
+
 HTTP_STATUS=$(curl -o /dev/null -s -w "%{http_code}" \
   --max-time 5 \
   "https://github.com/${REPO_PATH}" 2>/dev/null || echo "000")
 
 if [ "$HTTP_STATUS" = "200" ]; then
   echo "" >&2
-  echo "🚫 BLOCKED: This appears to be a PUBLIC repository." >&2
+  echo "🚫 BLOCKED: Cannot push to a PUBLIC repository." >&2
   echo "" >&2
-  echo "   Remote: $REMOTE → $REMOTE_URL" >&2
-  echo "   Repo:   https://github.com/${REPO_PATH}" >&2
-  echo "   Check:  HTTP $HTTP_STATUS (accessible without authentication = public)" >&2
+  echo "   Command : $COMMAND" >&2
+  echo "   Remote  : $REMOTE → $REMOTE_URL" >&2
+  echo "   Repo    : https://github.com/${REPO_PATH}" >&2
+  echo "   Reason  : HTTP $HTTP_STATUS — accessible without authentication = public" >&2
   echo "" >&2
-  echo "   Pushing to a public repo means anyone on the internet can see your code." >&2
-  echo "   If you intended to push here, type 'yes push public' to confirm." >&2
+  echo "   Pushing to a public repo exposes all committed code to the internet." >&2
+  echo "   Get explicit user approval before pushing." >&2
   echo "" >&2
   exit 2
 fi
 
-# HTTP 404, timeout (000), or other = private/non-existent/non-GitHub → allow
 exit 0

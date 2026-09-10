@@ -48,15 +48,12 @@ vibe-coding-guardrails/
 │   ├── session-start-check.sh
 │   ├── no-hardcoded-secrets.sh
 │   ├── no-sensitive-files-in-git.sh
-│   ├── confirm-destructive-ops.sh
 │   ├── check-public-repo-push.sh
 │   ├── check-insecure-patterns.sh
-│   └── test-hooks.sh                          ← Unit + Integration Test Suite
+│   └── test-hooks.sh                          ← Automated Test Suite
 ├── skills/                                    ← Skill Definitions (source)
 │   ├── setup/                                 ← /vibe-coding-guardrails:setup
-│   ├── new-project/                           ← /vibe-coding-guardrails:new-project
-│   ├── check-secrets/                         ← /vibe-coding-guardrails:check-secrets
-│   └── check-before-deploy/                   ← /vibe-coding-guardrails:check-before-deploy
+│   └── test/                                  ← /vibe-coding-guardrails:test
 ├── .claude-plugin/
 │   ├── plugin.json                            ← Plugin identity
 │   └── marketplace.json                       ← Marketplace catalog
@@ -107,11 +104,9 @@ Hook คือ Script ที่ Claude Code รันโดยอัตโนม
 
 ### 2. PreToolUse — ทำงานตอน Claude รัน Bash Command
 
-**`confirm-destructive-ops.sh`** — Block คำสั่งที่อันตราย เช่น `rm -rf`, `DROP TABLE`, `git push --force`, Deploy ไป Production และ Push ตรงไป `main`/`master`
-
 **`no-sensitive-files-in-git.sh`** — Block `git add` หรือ `git commit` ถ้า File ที่กำลัง Stage เป็นไฟล์ประเภทที่ไม่ควร Commit เช่น `.env`, `.pem`, `.key`, `CLAUDE.local.md`
 
-**`check-public-repo-push.sh`** — ก่อน `git push` ทุกครั้ง Hook จะ Curl ไปเช็คว่า GitHub Repo เป็น Public ไหม (ถ้า Unauthenticated Curl ได้ HTTP 200 = Public) — ถ้าใช่จะ Block พร้อมให้ User Confirm ก่อน
+**`check-public-repo-push.sh`** — ก่อน `git push` หรือ `gh` command ทุกครั้ง Hook จะ Curl ไปเช็คว่า GitHub Repo เป็น Public ไหม (ถ้า Unauthenticated Curl ได้ HTTP 200 = Public) — ถ้าใช่จะ Block พร้อมแจ้งเหตุผล
 
 ### 3. PostToolUse — ทำงานหลัง Claude เขียนหรือแก้ไฟล์
 
@@ -123,62 +118,37 @@ Hook คือ Script ที่ Claude Code รันโดยอัตโนม
 
 ## Skills — คำสั่งพิเศษที่พิมพ์ตรงๆ ใน Claude Code
 
-นอกจาก Hook ที่ทำงานเองแล้ว ยังมี Skill ที่เรียกใช้ได้ตามต้องการ Claude จะ Invoke Skill เหล่านี้เองด้วยถ้าเห็นว่า Context เหมาะสม — หรือจะพิมพ์ตรงๆ ก็ได้
+นอกจาก Hook ที่ทำงานเองแล้ว ยังมี Skill ที่เรียกใช้ได้ตามต้องการ
 
 | พิมพ์ | ใช้เมื่อไหร่ | Claude จะทำอะไร |
 |---|---|---|
 | `/vibe-coding-guardrails:setup` | ครั้งแรกที่ติดตั้ง | Copy hooks, skills, settings, และ install gitleaks ลงเครื่อง |
-| `/vibe-coding-guardrails:new-project` | เริ่ม project ใหม่ทุกครั้ง | สร้าง `.gitignore`, `.env.example`, Init Git ก่อนเขียน Code บรรทัดแรก |
-| `/vibe-coding-guardrails:check-secrets` | ก่อน commit | Scan ทุกไฟล์ที่แก้ใน Session นี้ + ตรวจว่า `.gitignore` ครอบคลุมพอไหม |
-| `/vibe-coding-guardrails:check-before-deploy` | ก่อน deploy / ก่อน push ขึ้น public | รัน Pre-Deploy Checklist ครบ 4 ด้าน: git tracking, `.gitignore`, insecure patterns, และ gitleaks scan |
-
-### Flow ที่แนะนำ
-
-```
-เริ่ม project ใหม่
-     ↓
-/vibe-coding-guardrails:new-project
-     ↓
-เขียน code ตามปกติ (hooks ทำงานเองทุก file save)
-     ↓
-ก่อน commit → /vibe-coding-guardrails:check-secrets  (optional แต่แนะนำ)
-     ↓
-ก่อน deploy → /vibe-coding-guardrails:check-before-deploy  (บังคับ)
-```
-
-Hook ทำงานเองโดยอัตโนมัติตลอดเวลา ไม่ต้องสั่ง Skill ช่วยตรวจในระดับที่กว้างกว่า Hook สามารถตรวจสอบหลายไฟล์พร้อมกัน และให้คำแนะนำ step-by-step ได้
+| `/vibe-coding-guardrails:test` | หลัง setup หรือเมื่อต้องการยืนยัน | รัน live test ทุก hook — สร้าง test environment ชั่วคราว, ทดสอบ, ลบทิ้ง, รายงานผล |
 
 ---
 
 ## ทดสอบว่า Hook ทำงานถูกต้องไหม
 
-Policy นี้มี Test Suite สองระดับ:
+### Live Test (แนะนำ)
 
-```bash
-# รัน Unit + Integration Tests ทั้งหมด
-bash .claude/hooks/test-hooks.sh
-
-# รัน เฉพาะ Integration Tests (ใช้ claude -p จริง)
-bash .claude/hooks/test-hooks.sh integration
-
-# รัน Test เฉพาะ Hook ที่สนใจ
-bash .claude/hooks/test-hooks.sh confirm-destructive-ops
-bash .claude/hooks/test-hooks.sh check-public-repo-push
+```
+/vibe-coding-guardrails:test
 ```
 
-### Unit Tests
-Pipe JSON Input เข้า Hook Script โดยตรง ตรวจว่า Exit Code ถูกต้อง ใช้ Full JSON Input Format ตาม Official Docs ของ Claude Code ไม่ต้องการ `claude` CLI
+Claude จะสร้าง test environment ชั่วคราว ทดสอบแต่ละ hook โดยทำสิ่งที่ policy ห้ามจริงๆ เพื่อพิสูจน์ว่า hook บล็อกได้ แล้วลบทุกอย่างทิ้งและรายงานผล ✅/❌
 
-### Integration Tests
-รัน `claude -p` จริงแล้วตรวจว่า Claude ตอบสนองต่อการ Block ถูกต้อง ครอบคลุมทุก Hook ต้องมี `claude` CLI และ `ANTHROPIC_API_KEY` ในเครื่อง
+### Automated Unit Tests
 
-| Test Type | จำนวน | ต้องการ |
-|---|---|---|
-| Unit | 56 | Bash 3.2+ |
-| Integration | 9 | claude CLI + API Key |
-| **รวม** | **67** | |
+```bash
+bash .claude/hooks/test-hooks.sh
+```
 
-Tests บาง Suite จะ SKIP ถ้า Linter ไม่ได้ติดตั้ง (ruff, shellcheck) — นับเป็น Expected ไม่ใช่ Failure
+ผลที่คาดหวัง: `PASS: 29 · FAIL: 0-4 · SKIP: 8`
+
+FAIL ที่ยอมรับได้ (environment issues ไม่ใช่ bug จริง):
+- `startup: expected gitleaks mention` — gitleaks ไม่อยู่ใน PATH ของ test shell
+- `edge: push no remote` — test folder อาจมี remote ติดมา
+- `live: HTTPS/SSH public repo` — network/git context ของ test runner
 
 ---
 

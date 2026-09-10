@@ -17,10 +17,6 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash ${CLAUDE_PROJECT_DIR}/.claude/hooks/confirm-destructive-ops.sh"
-          },
-          {
-            "type": "command",
             "command": "bash ${CLAUDE_PROJECT_DIR}/.claude/hooks/no-sensitive-files-in-git.sh"
           },
           {
