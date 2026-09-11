@@ -43,23 +43,22 @@
 vibe-coding-guardrails/
 ├── CLAUDE.md                                  ← กฎที่ Claude อ่านทุก Session
 ├── settings.json                              ← Wire Hook ทั้งหมด (template)
-├── hooks/                                     ← Hook Scripts (source)
+├── hooks/                                     ← Hook Scripts + Config
 │   ├── session-start-check.sh
 │   ├── no-hardcoded-secrets.sh
 │   ├── no-sensitive-files-in-git.sh
 │   ├── check-public-repo-push.sh
 │   ├── check-insecure-patterns.sh
-│   └── test-hooks.sh                          ← Automated Test Suite
-├── skills/                                    ← Skill Definitions (source)
+│   ├── test-hooks.sh                          ← Automated Test Suite
+│   └── hooks.json                             ← Plugin hooks (โหลดอัตโนมัติ)
+├── skills/                                    ← Skill Definitions
 │   ├── install/                               ← /vibe-coding-guardrails:install
+│   ├── uninstall/                             ← /vibe-coding-guardrails:uninstall
 │   └── test/                                  ← /vibe-coding-guardrails:test
+├── .gitleaks.toml                             ← Custom gitleaks rules
 ├── .claude-plugin/
 │   ├── plugin.json                            ← Plugin identity
 │   └── marketplace.json                       ← Marketplace catalog
-└── .claude/                                   ← Bundled copy (ติดตั้งผ่าน plugin)
-    ├── settings.json
-    ├── hooks/
-    └── skills/
 ```
 
 Policy แบ่งเป็นสองส่วนหลัก:
@@ -121,8 +120,9 @@ Hook คือ Script ที่ Claude Code รันโดยอัตโนม
 
 | พิมพ์ | ใช้เมื่อไหร่ | Claude จะทำอะไร |
 |---|---|---|
-| `/vibe-coding-guardrails:install` | ครั้งแรกที่ติดตั้ง | ติดตั้ง hooks, gitleaks config, และ settings ให้ครบอัตโนมัติ |
-| `/vibe-coding-guardrails:test` | หลัง setup หรือเมื่อต้องการยืนยัน | รัน live test ทุก hook — สร้าง test environment ชั่วคราว, ทดสอบ, ลบทิ้ง, รายงานผล |
+| `/vibe-coding-guardrails:install` | ครั้งแรกที่ติดตั้ง | ติดตั้ง gitleaks config และ gitleaks ให้พร้อมใช้ |
+| `/vibe-coding-guardrails:uninstall` | ต้องการถอนออก | ลบ gitleaks config และ hooks entries ออกจาก settings.json |
+| `/vibe-coding-guardrails:test` | หลังติดตั้งหรือต้องการยืนยัน | รัน live test ทุก hook — สร้าง test environment ชั่วคราว, ทดสอบ, ลบทิ้ง, รายงานผล |
 
 ---
 
