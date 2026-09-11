@@ -46,6 +46,14 @@ regex = '''(?i)(?:line[_-]?token|line[_-]?notify)\s*[:=]\s*["']Bearer\s+([A-Za-z
 secretGroup = 1
 tags = ["secret", "token", "line"]
 
+# ── OpenAI API key (sk-proj- format) ─────────────────────────────────────────
+# default rules ไม่ครอบ sk-proj-* (OpenAI project keys)
+[[rules]]
+id = "openai-project-api-key"
+description = "OpenAI project API key (sk-proj- format)"
+regex = '''sk-proj-[A-Za-z0-9\-_]{40,}'''
+tags = ["secret", "api-key", "openai"]
+
 # ── Slack Incoming Webhook ────────────────────────────────────────────────────
 # จับ https://hooks.slack.com/services/T.../B.../XXX
 [[rules]]
