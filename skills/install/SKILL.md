@@ -1,8 +1,9 @@
 ---
 name: install
 description: >
-  ติดตั้ง Vibe Coding Guardrails บนเครื่องนี้ — copy gitleaks config และติดตั้ง gitleaks
-  Hooks ทำงานอัตโนมัติเมื่อ plugin เปิดใช้งาน ไม่ต้อง copy hooks หรือแก้ settings เอง
+  Install Vibe Coding Guardrails on this machine — copies the gitleaks config
+  with custom rules and installs gitleaks if needed. Hooks load automatically
+  from the plugin when enabled; no manual settings changes required.
   Use when: a new team member wants to install the policy, or the user asks to install
   or set up security guardrails.
 allowed-tools: Bash(mkdir *) Bash(cp *) Bash(brew *) Bash(apt *) Bash(snap *) Bash(gitleaks *) Bash(echo *) Bash(uname *) Bash(command *) Bash(ls *)
@@ -44,7 +45,19 @@ cp "${POLICY_DIR}/.gitleaks.toml" "$HOME/.claude/.gitleaks.toml"
 
 ---
 
-## ขั้นตอนที่ 3 — ตรวจและติดตั้ง gitleaks
+## ขั้นตอนที่ 3 — Copy CLAUDE.md (Security Baseline)
+
+Copy `CLAUDE.md` ไปที่ `~/.claude/CLAUDE.md` เพื่อให้ security rules โหลดทุก session บนเครื่องนี้:
+
+```bash
+cp "${POLICY_DIR}/CLAUDE.md" "$HOME/.claude/CLAUDE.md"
+```
+
+บอก: `✅ CLAUDE.md (security baseline — โหลดทุก session อัตโนมัติ)`
+
+---
+
+## ขั้นตอนที่ 4 — ตรวจและติดตั้ง gitleaks
 
 ```bash
 command -v gitleaks &>/dev/null && echo "INSTALLED" || echo "NOT_INSTALLED"
@@ -71,7 +84,7 @@ uname -s
 
 ---
 
-## ขั้นตอนที่ 4 — สรุป
+## ขั้นตอนที่ 5 — สรุป
 
 แสดงผล:
 
@@ -79,6 +92,7 @@ uname -s
 ติดตั้งเสร็จแล้ว
 
 ✅ Gitleaks config
+✅ CLAUDE.md (security baseline)
 ✅ gitleaks X.X.X
 
 Hooks ที่ทำงานอัตโนมัติ (ไม่ต้องทำอะไรเพิ่ม):

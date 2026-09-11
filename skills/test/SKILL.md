@@ -1,9 +1,10 @@
 ---
 name: test
 description: >
-  ทดสอบว่า Vibe Coding Guardrails hooks ทำงานถูกต้องไหม — สร้าง test environment ชั่วคราว
-  ทดสอบแต่ละ hook โดยทำสิ่งที่ policy ห้ามจริงๆ แล้วลบทิ้ง รายงานผล ✅/❌
-  Use when: after setup, after update, or to verify hooks are working correctly.
+  Run a live end-to-end test of all Vibe Coding Guardrails hooks. Creates a
+  temporary test environment, intentionally triggers each hook to confirm it
+  blocks correctly, then cleans up and reports results.
+  Use when: after install, after update, or to verify hooks are working correctly.
 allowed-tools: Bash(*) Write(*) Edit(*) Read(*)
 ---
 
