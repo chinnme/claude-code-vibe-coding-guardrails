@@ -63,19 +63,36 @@ cp ${POLICY_DIR}/.gitleaks.toml ${INSTALL_TARGET}/.gitleaks.toml
 
 ## ขั้นตอนที่ 4 — Merge settings.json
 
-ตรวจว่ามี `${INSTALL_TARGET}/settings.json` อยู่แล้วไหม:
+ก่อน merge ต้องรู้ absolute path จริงๆ ก่อน:
 
 ```bash
-ls ${INSTALL_TARGET}/settings.json 2>/dev/null && echo "EXISTS" || echo "NOT_EXISTS"
+REAL_INSTALL_TARGET=$(echo "$HOME/.claude")
 ```
 
-**ถ้าไม่มี:** copy ตรงๆ:
+ตรวจว่ามี `${REAL_INSTALL_TARGET}/settings.json` อยู่แล้วไหม:
+
 ```bash
-cp ${POLICY_DIR}/settings.json ${INSTALL_TARGET}/settings.json
+ls ${REAL_INSTALL_TARGET}/settings.json 2>/dev/null && echo "EXISTS" || echo "NOT_EXISTS"
+```
+
+**ถ้าไม่มี:** copy แล้วแทน `${CLAUDE_PROJECT_DIR}` ด้วย absolute path จริงๆ:
+```bash
+python3 -c "
+import json, os
+with open('${POLICY_DIR}/settings.json') as f:
+    content = f.read()
+content = content.replace('\${CLAUDE_PROJECT_DIR}/.claude/hooks', os.path.expanduser('~') + '/.claude/hooks')
+with open(os.path.expanduser('~') + '/.claude/settings.json', 'w') as f:
+    f.write(content)
+print('done')
+"
 ```
 
 **ถ้ามีอยู่แล้ว:** อ่านทั้งสองไฟล์ แล้ว merge เฉพาะ `hooks` และ `permissions.deny` เข้าไป
-ไม่ต้องถาม ทำเลย แต่บอกว่า merge อะไรไป
+**สำคัญ:** ทุก path ใน hooks ต้องเป็น absolute path เช่น `/Users/xxx/.claude/hooks/` ห้ามใช้ `$HOME` หรือ `~`
+ใช้ `os.path.expanduser('~')` เพื่อ expand path จริง
+
+ทำเลยไม่ต้องถาม แต่บอกว่า merge อะไรไป
 
 บอก: `✅ Settings.json (hooks + permissions)`
 
