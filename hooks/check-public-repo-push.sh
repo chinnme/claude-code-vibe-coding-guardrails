@@ -41,20 +41,32 @@ for sub in subcommands:
     if not tokens:
         continue
 
-    # Find 'git' followed by 'push' (possibly with env vars like GIT_SSH=... git push)
+    # Find 'git' then skip git-level flags (-C <path>, --git-dir, etc.) to find subcommand
     for i, tok in enumerate(tokens):
-        if tok == 'git' and i + 1 < len(tokens) and tokens[i+1] == 'push':
-            IS_PUSH = True
-            # Everything after 'push' in this token list
-            rest = tokens[i+2:]
-            # Skip flags (start with -) to find remote name
-            for r in rest:
-                if r.startswith('-'):
-                    continue
-                if ':' in r or '/' in r:
-                    break  # refspec, stop
-                REMOTE_HINT = r
-                break
+        if tok == 'git':
+            j = i + 1
+            # Skip git-level flags that take a value argument
+            while j < len(tokens):
+                t = tokens[j]
+                if t in ('-C', '--git-dir', '--work-tree', '--namespace'):
+                    j += 2  # skip flag + value
+                elif t.startswith('-'):
+                    j += 1  # skip standalone flag
+                else:
+                    break  # found subcommand
+
+            if j < len(tokens) and tokens[j] == 'push':
+                IS_PUSH = True
+                # Everything after 'push'
+                rest = tokens[j+1:]
+                # Skip flags (start with -) to find remote name
+                for r in rest:
+                    if r.startswith('-'):
+                        continue
+                    if ':' in r or '/' in r:
+                        break  # refspec, stop
+                    REMOTE_HINT = r
+                    break
             break
 
     if IS_PUSH:

@@ -126,8 +126,10 @@ Hook ตรวจ HTTP → 404 = ไม่ public → อนุญาต (git er
 
 เขียน content นี้ลงไฟล์ `${TEST_DIR}/bad-apikey.js`:
 ```javascript
-const openaiKey = "sk-proj-ABCDEFGHIJKLMNOPQRSTUVWXYZabcdef1234567890";
+const openaiKey = "sk-proj-xK9mN2pQr8vT5wY3bL6cH1dF4jG7nU0sE2oA9iW";
 ```
+
+**สำคัญ:** key ต้องมี entropy สูง (ตัวอักษรผสม random) — gitleaks มี entropy filter ที่กรอง pattern ซ้ำๆ เช่น ABCDEF... ออก key จริงจากผู้ใช้จะมี entropy สูงเสมอและถูกจับได้
 
 Hook `no-hardcoded-secrets.sh` ต้องบล็อก เพราะ custom rules จับ `sk-proj-*`
 BLOCKED = PASS | ไม่บล็อก = FAIL
