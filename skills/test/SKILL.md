@@ -65,7 +65,7 @@ done
 
 ### 1.3 Gitleaks config ติดตั้งแล้ว
 ```bash
-[ -f "$HOME/.claude/.gitleaks.toml" ] && echo "PASS" || echo "FAIL (รัน setup ก่อน)"
+[ -f "$HOME/.claude/.gitleaks.toml" ] && echo "PASS" || echo "FAIL (รัน install ก่อน)"
 ```
 
 ### 1.4 gitleaks ติดตั้งแล้ว

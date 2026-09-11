@@ -13,7 +13,7 @@
 ```
 /plugin marketplace add chinnme/claude-code-vibe-coding-guardrails
 /plugin install vibe-coding-guardrails@chinnme
-/vibe-coding-guardrails:setup
+/vibe-coding-guardrails:install
 ```
 
 **ขั้นตอนที่ 1–2** เพิ่ม marketplace และติดตั้ง plugin ตอน `/plugin install` Claude Code จะถามว่าจะติดตั้ง Scope ไหน — เลือก **"Install for you (user scope)"** เพื่อให้ Guardrails ทำงานกับทุก Project บนเครื่อง:
@@ -24,15 +24,14 @@
 | **Project** | `.claude/settings.json` (commit ขึ้น git) | ทุกคนที่ clone repo นี้ |
 | **Local** | `.claude/settings.local.json` (gitignored) | แค่คุณคนเดียวใน repo นี้ |
 
-**ขั้นตอนที่ 3** รัน `/vibe-coding-guardrails:setup` — Claude จะพาผ่าน installation แบบ interactive โดยถามทีละขั้น:
+**ขั้นตอนที่ 3** รัน `/vibe-coding-guardrails:install` — Claude จะติดตั้งให้ครบอัตโนมัติโดยไม่ต้องถาม:
 
-1. **ติดตั้ง global หรือเฉพาะ project นี้?** — เลือก "All my projects" ถ้าอยากให้ทำงานทุก project บนเครื่อง
-2. **Copy hooks และ skills** ไปยังที่ที่เลือก
-3. **Merge settings.json** — ถ้ามี settings.json อยู่แล้ว Claude จะแสดง diff ให้ confirm ก่อน ไม่ได้ทับทันที
-4. **Copy CLAUDE.md** ลง project ปัจจุบัน (optional)
-5. **ตรวจและติดตั้ง gitleaks** ถ้ายังไม่มีในเครื่อง
+1. **Copy hooks 5 ตัว** ไปที่ `~/.claude/hooks/`
+2. **Copy gitleaks config** — custom rules สำหรับ LINE token, Slack webhook, passwords
+3. **Merge settings.json** — เพิ่ม hooks และ permissions โดยอัตโนมัติ
+4. **ติดตั้ง gitleaks** ถ้ายังไม่มีในเครื่อง
 
-หลัง setup เสร็จ รัน `/reload-plugins` หรือ restart Claude Code เพื่อให้ hooks เริ่มทำงาน
+หลังติดตั้งเสร็จ รัน `/reload-plugins` หรือ restart Claude Code เพื่อให้ hooks เริ่มทำงาน
 
 ---
 
@@ -52,7 +51,7 @@ vibe-coding-guardrails/
 │   ├── check-insecure-patterns.sh
 │   └── test-hooks.sh                          ← Automated Test Suite
 ├── skills/                                    ← Skill Definitions (source)
-│   ├── setup/                                 ← /vibe-coding-guardrails:setup
+│   ├── install/                               ← /vibe-coding-guardrails:install
 │   └── test/                                  ← /vibe-coding-guardrails:test
 ├── .claude-plugin/
 │   ├── plugin.json                            ← Plugin identity
@@ -122,7 +121,7 @@ Hook คือ Script ที่ Claude Code รันโดยอัตโนม
 
 | พิมพ์ | ใช้เมื่อไหร่ | Claude จะทำอะไร |
 |---|---|---|
-| `/vibe-coding-guardrails:setup` | ครั้งแรกที่ติดตั้ง | Copy hooks, skills, settings, และ install gitleaks ลงเครื่อง |
+| `/vibe-coding-guardrails:install` | ครั้งแรกที่ติดตั้ง | ติดตั้ง hooks, gitleaks config, และ settings ให้ครบอัตโนมัติ |
 | `/vibe-coding-guardrails:test` | หลัง setup หรือเมื่อต้องการยืนยัน | รัน live test ทุก hook — สร้าง test environment ชั่วคราว, ทดสอบ, ลบทิ้ง, รายงานผล |
 
 ---
