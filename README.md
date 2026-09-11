@@ -137,12 +137,7 @@ Claude จะสร้าง test environment ชั่วคราว ทดส
 bash .claude/hooks/test-hooks.sh
 ```
 
-ผลที่คาดหวัง: `PASS: 29 · FAIL: 0-4 · SKIP: 8`
-
-FAIL ที่ยอมรับได้ (environment issues ไม่ใช่ bug จริง):
-- `startup: expected gitleaks mention` — gitleaks ไม่อยู่ใน PATH ของ test shell
-- `edge: push no remote` — test folder อาจมี remote ติดมา
-- `live: HTTPS/SSH public repo` — network/git context ของ test runner
+ผลที่คาดหวัง: `PASS: 33 · FAIL: 0 · SKIP: 0`
 
 ---
 

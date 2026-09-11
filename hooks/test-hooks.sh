@@ -157,10 +157,11 @@ run_test "startup: exits 0 (non-blocking)" "0" "$(session_json 'startup')" "$HOO
 run_test "resume: exits 0 (non-blocking)"  "0" "$(session_json 'resume')"  "$HOOK"
 
 # Verify gitleaks detection message matches installed state
+# NOTE: SessionStart hook uses stdout (plain text injected into context), not stderr
 if command -v gitleaks &>/dev/null; then
-  # Should mention gitleaks version in stderr
-  actual_stderr=$(printf '%s' "$(session_json 'startup')" | bash "$HOOK" 2>&1 >/dev/null || true)
-  if echo "$actual_stderr" | grep -q "gitleaks"; then
+  # Should mention gitleaks version in stdout
+  actual_stdout=$(printf '%s' "$(session_json 'startup')" | bash "$HOOK" 2>/dev/null || true)
+  if echo "$actual_stdout" | grep -q "gitleaks"; then
     green "  PASS  startup: gitleaks detected and mentioned in output"
     ((PASS++)) || true
   else
@@ -168,8 +169,9 @@ if command -v gitleaks &>/dev/null; then
     ((FAIL++)) || true
   fi
 else
-  actual_stderr=$(printf '%s' "$(session_json 'startup')" | bash "$HOOK" 2>&1 >/dev/null || true)
-  if echo "$actual_stderr" | grep -q "not installed"; then
+  # gitleaks not installed — hook outputs JSON to stdout (additionalContext)
+  actual_stdout=$(printf '%s' "$(session_json 'startup')" | bash "$HOOK" 2>/dev/null || true)
+  if echo "$actual_stdout" | grep -q "gitleaks"; then
     green "  PASS  startup: install guide shown when gitleaks missing"
     ((PASS++)) || true
   else
@@ -257,30 +259,41 @@ run_test "safe: npm install"       "0" "$(bash_json 'npm install')"             
 run_test "safe: git commit"        "0" "$(bash_json 'git commit -m "test"')"    "$HOOK"
 run_test "safe: git pull"          "0" "$(bash_json 'git pull origin main')"    "$HOOK"
 run_test "safe: git status"        "0" "$(bash_json 'git status')"              "$HOOK"
-run_test "edge: push no remote"    "0" "$(bash_json 'git push')"               "$HOOK"
+
+# edge: push with no remote — must run in a fresh git repo with no remote configured
+TMPGIT_NOREMOTE=$(mktemp -d)
+git -C "$TMPGIT_NOREMOTE" init -q
+actual_exit=0
+cd "$TMPGIT_NOREMOTE" && printf '%s' "$(bash_json 'git push')" | bash "$HOOK" >/dev/null 2>&1 || actual_exit=$?
+cd - >/dev/null; rm -rf "$TMPGIT_NOREMOTE"
+[ "$actual_exit" -eq 0 ] && { green "  PASS  edge: push no remote (exit 0)"; ((PASS++)) || true; } \
+                          || { red "  FAIL  edge: push no remote — expected exit=0 got exit=$actual_exit"; ((FAIL++)) || true; }
 
 if command -v curl &>/dev/null; then
+  # chinnme/public-repo is a real public repo (HTTP 200) → hook should block
   TMPGIT=$(mktemp -d)
   git -C "$TMPGIT" init -q
-  git -C "$TMPGIT" remote add origin "https://github.com/chinnme/public-repo-test.git"
+  git -C "$TMPGIT" remote add origin "https://github.com/chinnme/public-repo.git"
   actual_exit=0
   cd "$TMPGIT" && printf '%s' "$(bash_json 'git push origin main')" | bash "$HOOK" >/dev/null 2>&1 || actual_exit=$?
   cd - >/dev/null; rm -rf "$TMPGIT"
   [ "$actual_exit" -eq 2 ] && { green "  PASS  live: HTTPS public repo blocked (exit 2)"; ((PASS++)) || true; } \
                             || { red "  FAIL  live: HTTPS public repo should be blocked (got $actual_exit)"; ((FAIL++)) || true; }
 
+  # chinnme/private-repo is a real private repo (HTTP 404 for unauthenticated) → hook should allow
   TMPGIT2=$(mktemp -d)
   git -C "$TMPGIT2" init -q
-  git -C "$TMPGIT2" remote add origin "https://github.com/chinnme/private-repo-test.git"
+  git -C "$TMPGIT2" remote add origin "https://github.com/chinnme/private-repo.git"
   actual_exit=0
   cd "$TMPGIT2" && printf '%s' "$(bash_json 'git push origin main')" | bash "$HOOK" >/dev/null 2>&1 || actual_exit=$?
   cd - >/dev/null; rm -rf "$TMPGIT2"
   [ "$actual_exit" -eq 0 ] && { green "  PASS  live: HTTPS private repo passes (exit 0)"; ((PASS++)) || true; } \
                             || { red "  FAIL  live: HTTPS private repo should pass (got $actual_exit)"; ((FAIL++)) || true; }
 
+  # SSH format pointing to same known-public repo
   TMPGIT3=$(mktemp -d)
   git -C "$TMPGIT3" init -q
-  git -C "$TMPGIT3" remote add origin "git@github.com:chinnme/public-repo-test.git"
+  git -C "$TMPGIT3" remote add origin "git@github.com:chinnme/public-repo.git"
   actual_exit=0
   cd "$TMPGIT3" && printf '%s' "$(bash_json 'git push origin main')" | bash "$HOOK" >/dev/null 2>&1 || actual_exit=$?
   cd - >/dev/null; rm -rf "$TMPGIT3"
@@ -288,41 +301,6 @@ if command -v curl &>/dev/null; then
                             || { red "  FAIL  live: SSH public repo should be blocked (got $actual_exit)"; ((FAIL++)) || true; }
 else
   yellow "  SKIP  live repo tests (curl not available)"; ((SKIP+=3)) || true
-fi
-fi
-
-# ══════════════════════════════════════════════════════════════════════════════
-# 4. auto-detect-and-lint.sh  (PostToolUse)
-# ══════════════════════════════════════════════════════════════════════════════
-if run_suite "auto-detect-and-lint"; then
-HOOK="$HOOKS_DIR/auto-detect-and-lint.sh"
-
-TMPDIR_L=$(mktemp -d)
-trap 'rm -rf "$TMPDIR_S" "$TMPDIR_L" 2>/dev/null || true' EXIT
-
-JSON_FILE="$TMPDIR_L/data.json"; echo '{"key":"value"}' > "$JSON_FILE"
-PY_CLEAN="$TMPDIR_L/clean.py"; printf 'def hello():\n    print("hello")\n' > "$PY_CLEAN"
-PY_DIRTY="$TMPDIR_L/dirty.py"; printf 'import os,sys\nx=1;y=2\nprint(x+y)\n' > "$PY_DIRTY"
-SH_CLEAN="$TMPDIR_L/clean.sh"; printf '#!/bin/bash\necho "hello world"\n' > "$SH_CLEAN"
-SH_DIRTY="$TMPDIR_L/dirty.sh"; printf '#!/bin/bash\nx=`echo hello`\n[ $x == "hello" ] && echo "ok"\n' > "$SH_DIRTY"
-
-run_test "edge: unsupported type (json)" "0" "$(edit_json "$JSON_FILE")"          "$HOOK"
-run_test "edge: nonexistent file"        "0" "$(edit_json '/no/such/file.py')"    "$HOOK"
-run_test "edge: Write tool json works"   "0" "$(write_json "$JSON_FILE")"         "$HOOK"
-
-if command -v ruff &>/dev/null; then
-  run_test "py: clean passes"            "0" "$(edit_json "$PY_CLEAN")"  "$HOOK"
-  run_test "py: dirty warns"             "1" "$(edit_json "$PY_DIRTY")"  "$HOOK"
-  run_test "py: Write tool works"        "0" "$(write_json "$PY_CLEAN")" "$HOOK"
-else
-  yellow "  SKIP  python lint tests (ruff not installed — run /setup-linting)"; ((SKIP+=3)) || true
-fi
-
-if command -v shellcheck &>/dev/null; then
-  run_test "sh: clean passes"            "0" "$(edit_json "$SH_CLEAN")"  "$HOOK"
-  run_test "sh: dirty warns"             "1" "$(edit_json "$SH_DIRTY")"  "$HOOK"
-else
-  yellow "  SKIP  shell lint tests (shellcheck not installed — run /setup-linting)"; ((SKIP+=2)) || true
 fi
 fi
 

@@ -1,13 +1,106 @@
-# .gitleaks.toml — Vibe Coding Guardrails Custom Rules
-# ใช้ร่วมกับ gitleaks default rules
-# วางที่: ~/.claude/.gitleaks.toml (setup skill จะ copy ให้อัตโนมัติ)
+# .gitleaks.toml — Vibe Coding Guardrails
+# Standalone config (no useDefault) to ensure all custom rules take effect.
+# Includes critical rules from gitleaks defaults plus custom rules for regional services.
+# Install path: ~/.claude/.gitleaks.toml (copied by the install skill)
 
-[extend]
-useDefault = true
+# ── Global allowlist ──────────────────────────────────────────────────────────
+# Skip environment variable references and template placeholders across all rules.
+[allowlist]
+description = "Skip env var references and common placeholders"
+regexes = [
+  '''process\.env\.[A-Z_]+''',
+  '''\$\{[A-Z_][A-Z0-9_]*\}''',
+  '''os\.environ''',
+]
 
-# ── Generic password assignment ──────────────────────────────────────────────
-# จับ password: "xxx" / passwd = "xxx" / pwd: "xxx"
-# ไม่จับ: your-password-here, example, placeholder, process.env
+# ══════════════════════════════════════════════════════════════════════════════
+# SECTION 1 — Selected rules from gitleaks defaults
+# ══════════════════════════════════════════════════════════════════════════════
+
+# AWS Access Key ID
+[[rules]]
+id = "aws-access-key-id"
+description = "AWS Access Key ID"
+regex = '''(A3T[A-Z0-9]|AKIA|AGPA|AIDA|AROA|AIPA|ANPA|ANVA|ASIA)[A-Z0-9]{16}'''
+tags = ["secret", "aws"]
+
+# AWS Secret Access Key
+[[rules]]
+id = "aws-secret-access-key"
+description = "AWS Secret Access Key"
+regex = '''(?i)aws[_\-\.]?secret[_\-\.]?access[_\-\.]?key\s*[:=]\s*["']?([A-Za-z0-9/+=]{40})["']?'''
+secretGroup = 1
+tags = ["secret", "aws"]
+
+# GitHub Personal Access Token (classic ghp_ and fine-grained github_pat_)
+[[rules]]
+id = "github-pat"
+description = "GitHub Personal Access Token"
+regex = '''(ghp|gho|ghu|ghs|ghr|github_pat)_[A-Za-z0-9_]{36,255}'''
+tags = ["secret", "github"]
+
+# GitLab Personal Access Token
+[[rules]]
+id = "gitlab-pat"
+description = "GitLab Personal Access Token"
+regex = '''glpat-[A-Za-z0-9\-=_]{20,}'''
+tags = ["secret", "gitlab"]
+
+# Generic private key (PEM header)
+[[rules]]
+id = "private-key"
+description = "Private key (PEM format)"
+regex = '''-----BEGIN[ A-Z0-9_-]{0,100}PRIVATE KEY( BLOCK)?-----'''
+tags = ["secret", "key"]
+
+# Stripe secret key
+[[rules]]
+id = "stripe-secret-key"
+description = "Stripe secret or restricted key"
+regex = '''(sk|rk)_live_[A-Za-z0-9]{24,}'''
+tags = ["secret", "stripe"]
+
+# SendGrid API key
+[[rules]]
+id = "sendgrid-api-key"
+description = "SendGrid API Key"
+regex = '''SG\.[A-Za-z0-9_\-]{22}\.[A-Za-z0-9_\-]{43}'''
+tags = ["secret", "sendgrid"]
+
+# Twilio Account SID + Auth Token
+[[rules]]
+id = "twilio-api-key"
+description = "Twilio API Key"
+regex = '''SK[0-9a-fA-F]{32}'''
+tags = ["secret", "twilio"]
+
+# JWT token (raw bearer — not a variable assignment)
+[[rules]]
+id = "jwt-token"
+description = "JSON Web Token (raw)"
+regex = '''eyJ[A-Za-z0-9_\/+-]{10,}\.[A-Za-z0-9_\/+-]{10,}\.[A-Za-z0-9_\/+-]{10,}'''
+tags = ["secret", "jwt"]
+
+  [rules.allowlist]
+  # Skip well-known example/test JWTs that appear in docs
+  regexes = [
+    '''eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9\.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ''',
+  ]
+
+# ══════════════════════════════════════════════════════════════════════════════
+# SECTION 2 — Custom rules for Vibe Coding Guardrails
+# ══════════════════════════════════════════════════════════════════════════════
+
+# OpenAI project API key (sk-proj- format — not covered by gitleaks defaults)
+[[rules]]
+id = "openai-project-api-key"
+description = "OpenAI project API key (sk-proj- format)"
+regex = '''sk-proj-[A-Za-z0-9\-_]{40,}'''
+tags = ["secret", "api-key", "openai"]
+
+# Generic hardcoded password assignment
+# Catches: password: "xxx" / passwd = "xxx" / pwd: "xxx"
+# Skips: placeholders (your-password-here, example, dummy, etc.)
 [[rules]]
 id = "generic-password-assignment"
 description = "Hardcoded password in variable or config"
@@ -20,9 +113,9 @@ tags = ["secret", "password"]
     '''(?i)(your|example|placeholder|dummy|sample|replace|change|fake|test|insert|add.your|xxx)''',
   ]
 
-# ── Generic token/key variable ────────────────────────────────────────────────
-# จับ API_TOKEN = "xyz..." / secret_key: "abc..." / auth_key = "..."
-# ไม่จับ: process.env.X / ${X} / placeholders
+# Generic hardcoded token or API key variable assignment
+# Catches: API_TOKEN = "xyz..." / secret_key: "abc..."
+# Skips: process.env.X / ${X} / common placeholders
 [[rules]]
 id = "hardcoded-token-variable"
 description = "Hardcoded token or API key in variable assignment"
@@ -37,8 +130,7 @@ tags = ["secret", "token"]
     '''\$\{''',
   ]
 
-# ── LINE Notify Bearer token ──────────────────────────────────────────────────
-# จับ LINE_TOKEN = "Bearer abc123..."
+# LINE Notify Bearer token
 [[rules]]
 id = "line-notify-bearer-token"
 description = "LINE Notify Bearer token hardcoded in variable"
@@ -46,25 +138,16 @@ regex = '''(?i)(?:line[_-]?token|line[_-]?notify)\s*[:=]\s*["']Bearer\s+([A-Za-z
 secretGroup = 1
 tags = ["secret", "token", "line"]
 
-# ── OpenAI API key (sk-proj- format) ─────────────────────────────────────────
-# default rules ไม่ครอบ sk-proj-* (OpenAI project keys)
-[[rules]]
-id = "openai-project-api-key"
-description = "OpenAI project API key (sk-proj- format)"
-regex = '''sk-proj-[A-Za-z0-9\-_]{40,}'''
-tags = ["secret", "api-key", "openai"]
-
-# ── Slack Incoming Webhook ────────────────────────────────────────────────────
-# จับ https://hooks.slack.com/services/T.../B.../XXX
+# Slack Incoming Webhook URL
 [[rules]]
 id = "slack-webhook-url"
 description = "Slack Incoming Webhook URL"
 regex = '''https://hooks\.slack\.com/services/[A-Z0-9]{8,}/[A-Z0-9]{8,}/[A-Za-z0-9]{20,}'''
 tags = ["secret", "webhook", "slack"]
 
-# ── Connection string with real password ──────────────────────────────────────
-# จับ postgresql://user:realpass@host / mysql://user:pass123@host
-# allowlist จัดการ ${}, :password@, :passwd@ แทน lookahead (Go regex ไม่รองรับ)
+# Database connection string with hardcoded password
+# Catches: postgresql://user:realpass@host / mysql://user:pass123@host
+# Skips: ${DB_PASSWORD} and :password@ / :passwd@ literal strings
 [[rules]]
 id = "connection-string-with-password"
 description = "Database or service connection string with hardcoded password"
@@ -77,12 +160,3 @@ tags = ["secret", "connection-string"]
     '''\$\{''',
     '''(?i)^(password|passwd|pwd)$''',
   ]
-
-# ── Global allowlist ──────────────────────────────────────────────────────────
-[allowlist]
-description = "ไม่ block environment variable references และ template placeholders"
-regexes = [
-  '''process\.env\.[A-Z_]+''',
-  '''\$\{[A-Z_][A-Z0-9_]*\}''',
-  '''os\.environ''',
-]

@@ -57,13 +57,21 @@ grep -q "vibe-coding-guardrails" ~/.claude/settings.json 2>/dev/null && echo "PA
 ```
 
 ### 1.2 Hooks ครบ 5 ตัว
+
+**หมายเหตุ:** hooks โหลดผ่าน plugin cache โดยตรง ไม่ได้อยู่ที่ `~/.claude/hooks/` ตรวจจาก plugin cache แทน:
+
 ```bash
-EXPECTED="session-start-check.sh no-hardcoded-secrets.sh no-sensitive-files-in-git.sh check-public-repo-push.sh check-insecure-patterns.sh"
-FOUND=0
-for h in $EXPECTED; do
-  [ -x "$HOME/.claude/hooks/$h" ] && FOUND=$((FOUND + 1))
-done
-[ "$FOUND" -eq 5 ] && echo "PASS (5/5)" || echo "FAIL ($FOUND/5)"
+PLUGIN_CACHE=$(ls -d ~/.claude/plugins/cache/chinnme/vibe-coding-guardrails/*/hooks/ 2>/dev/null | tail -1)
+if [ -n "$PLUGIN_CACHE" ]; then
+  EXPECTED="session-start-check.sh no-hardcoded-secrets.sh no-sensitive-files-in-git.sh check-public-repo-push.sh check-insecure-patterns.sh"
+  FOUND=0
+  for h in $EXPECTED; do
+    [ -f "$PLUGIN_CACHE/$h" ] && FOUND=$((FOUND + 1))
+  done
+  [ "$FOUND" -eq 5 ] && echo "PASS (5/5 ใน plugin cache)" || echo "FAIL ($FOUND/5)"
+else
+  echo "FAIL (plugin cache ไม่พบ)"
+fi
 ```
 
 ### 1.3 Gitleaks config ติดตั้งแล้ว
@@ -78,7 +86,13 @@ command -v gitleaks &>/dev/null && echo "PASS ($(gitleaks version 2>/dev/null))"
 
 ### 1.5 CLAUDE.md มีอยู่
 ```bash
-[ -f "CLAUDE.md" ] && echo "PASS" || echo "WARN (ไม่มี CLAUDE.md ใน project นี้)"
+if [ -f "CLAUDE.md" ]; then
+  echo "PASS (project CLAUDE.md)"
+elif [ -f "$HOME/.claude/CLAUDE.md" ]; then
+  echo "PASS (global ~/.claude/CLAUDE.md — โหลดทุก session อัตโนมัติ)"
+else
+  echo "WARN (ไม่มี CLAUDE.md — รัน /vibe-coding-guardrails:install เพื่อติดตั้ง)"
+fi
 ```
 
 ---

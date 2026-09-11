@@ -1,15 +1,15 @@
 {
   "name": "chinnme",
-  "description": "Plugins by chinnme for Claude Code teams.",
+  "description": "Plugins by Chinn Methathipakul for Claude Code teams.",
   "owner": {
-    "name": "chinnme",
+    "name": "Chinn Methathipakul",
     "url": "https://github.com/chinnme"
   },
   "plugins": [
     {
       "name": "vibe-coding-guardrails",
       "displayName": "Vibe Coding Guardrails",
-      "description": "Security guardrails for non-developer vibe coding teams. Enforces secret scanning (gitleaks), blocks sensitive file commits, prevents public repo pushes, detects insecure web patterns, and includes guided setup and pre-deploy checklist.",
+      "description": "Security guardrails for non-developer vibe coding teams. Enforces secret scanning (gitleaks), blocks sensitive file commits, prevents public repo pushes, and detects insecure web patterns.",
       "source": ".",
       "category": "security",
       "keywords": ["security", "guardrails", "gitleaks", "hooks", "non-dev", "vibe-coding", "insecure-patterns"]
