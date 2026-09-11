@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"${CLAUDE_PLUGIN_DIR}/hooks/session-start-check.sh\""
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/session-start-check.sh\""
           }
         ]
       }
@@ -17,11 +17,11 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"${CLAUDE_PLUGIN_DIR}/hooks/no-sensitive-files-in-git.sh\""
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/no-sensitive-files-in-git.sh\""
           },
           {
             "type": "command",
-            "command": "bash \"${CLAUDE_PLUGIN_DIR}/hooks/check-public-repo-push.sh\""
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/check-public-repo-push.sh\""
           }
         ]
       }
@@ -32,11 +32,11 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"${CLAUDE_PLUGIN_DIR}/hooks/no-hardcoded-secrets.sh\""
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/no-hardcoded-secrets.sh\""
           },
           {
             "type": "command",
-            "command": "bash \"${CLAUDE_PLUGIN_DIR}/hooks/check-insecure-patterns.sh\""
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/check-insecure-patterns.sh\""
           }
         ]
       }

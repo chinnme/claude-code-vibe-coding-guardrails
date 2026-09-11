@@ -47,8 +47,8 @@ fi
 GITLEAKS_CONFIG_FLAG=""
 if [ -f "$HOME/.claude/.gitleaks.toml" ]; then
   GITLEAKS_CONFIG_FLAG="--config $HOME/.claude/.gitleaks.toml"
-elif [ -n "${CLAUDE_PLUGIN_DIR:-}" ] && [ -f "${CLAUDE_PLUGIN_DIR}/.gitleaks.toml" ]; then
-  GITLEAKS_CONFIG_FLAG="--config ${CLAUDE_PLUGIN_DIR}/.gitleaks.toml"
+elif [ -n "${CLAUDE_PLUGIN_ROOT:-}" ] && [ -f "${CLAUDE_PLUGIN_ROOT}/.gitleaks.toml" ]; then
+  GITLEAKS_CONFIG_FLAG="--config ${CLAUDE_PLUGIN_ROOT}/.gitleaks.toml"
 fi
 
 SCAN_OUTPUT=$(cat "$FILE_PATH" | gitleaks stdin --no-banner $GITLEAKS_CONFIG_FLAG 2>&1)
