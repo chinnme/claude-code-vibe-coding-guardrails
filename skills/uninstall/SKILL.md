@@ -1,8 +1,8 @@
 ---
 name: uninstall
 description: >
-  ถอน Vibe Coding Guardrails ออกจากเครื่องนี้ให้สะอาด — ลบ gitleaks config,
-  ลบ hooks entries ออกจาก settings.json, และ uninstall plugin
+  Remove Vibe Coding Guardrails from this machine — deletes gitleaks config,
+  CLAUDE.md security baseline, and any hooks entries from settings.json.
   Use when: the user wants to remove the guardrails, uninstall the plugin, or clean up.
 allowed-tools: Bash(rm *) Bash(ls *) Bash(echo *) Bash(python3 *) Bash(cat *)
 ---
@@ -35,13 +35,16 @@ except: print('ไม่มี settings.json')
 
 ---
 
-## ขั้นตอนที่ 2 — ลบ Gitleaks Config
+## ขั้นตอนที่ 2 — ลบไฟล์ที่ติดตั้งทั้งหมด
+
+ลบทุกอย่างพร้อมกันเลย:
 
 ```bash
-rm -f ~/.claude/.gitleaks.toml && echo "ลบแล้ว" || echo "ไม่มีให้ลบ"
+rm -f ~/.claude/.gitleaks.toml && echo "✅ ลบ gitleaks config แล้ว" || echo "(ไม่มี .gitleaks.toml)"
+rm -f ~/.claude/CLAUDE.md && echo "✅ ลบ CLAUDE.md แล้ว" || echo "(ไม่มี CLAUDE.md)"
 ```
 
-บอก: `✅ ลบ gitleaks config แล้ว` หรือ `(ไม่มี gitleaks config — ข้าม)`
+บอกผลของแต่ละ command
 
 ---
 
@@ -102,6 +105,7 @@ else:
 ```
 สิ่งที่ลบออกแล้ว:
 ✅ Gitleaks config (~/.claude/.gitleaks.toml)
+✅ CLAUDE.md security baseline (~/.claude/CLAUDE.md)
 ✅ Hooks และ permissions ออกจาก settings.json
 
 ขั้นตอนสุดท้าย — รัน command นี้เพื่อ uninstall plugin:
@@ -125,6 +129,7 @@ with open(settings_path) as f:
 print('hooks:', 'มี' if d.get('hooks') else 'ไม่มี')
 print('permissions:', 'มี' if d.get('permissions') else 'ไม่มี')
 print('gitleaks.toml:', 'มี' if os.path.exists(os.path.expanduser('~/.claude/.gitleaks.toml')) else 'ไม่มี')
+print('CLAUDE.md:', 'มี' if os.path.exists(os.path.expanduser('~/.claude/CLAUDE.md')) else 'ไม่มี')
 "
 ```
 
