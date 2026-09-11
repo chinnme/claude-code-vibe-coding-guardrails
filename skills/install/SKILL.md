@@ -1,8 +1,9 @@
 ---
 name: install
 description: >
-  ติดตั้ง Vibe Coding Guardrails บนเครื่องนี้ — copy gitleaks config และติดตั้ง gitleaks
-  Hooks ทำงานอัตโนมัติเมื่อ plugin เปิดใช้งาน ไม่ต้อง copy hooks หรือแก้ settings เอง
+  Install Vibe Coding Guardrails on this machine — copies the gitleaks config
+  with custom rules and installs gitleaks if needed. Hooks load automatically
+  from the plugin when enabled; no manual settings changes required.
   Use when: a new team member wants to install the policy, or the user asks to install
   or set up security guardrails.
 allowed-tools: Bash(mkdir *) Bash(cp *) Bash(brew *) Bash(apt *) Bash(snap *) Bash(gitleaks *) Bash(echo *) Bash(uname *) Bash(command *) Bash(ls *)

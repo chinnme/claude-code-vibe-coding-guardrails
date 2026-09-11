@@ -1,7 +1,7 @@
 {
   "name": "vibe-coding-guardrails",
   "description": "Security guardrails for non-developer vibe coding teams. Enforces secret scanning (gitleaks), blocks sensitive file commits, prevents public repo pushes, detects insecure web patterns, and includes guided setup and pre-deploy checklist.",
-  "version": "1.4.2",
+  "version": "1.4.3",
   "author": {
     "name": "chinnme",
     "url": "https://github.com/chinnme"
