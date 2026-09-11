@@ -13,23 +13,18 @@
 ```
 /plugin marketplace add chinnme/claude-code-vibe-coding-guardrails
 /plugin install vibe-coding-guardrails@chinnme
+/reload-plugins
 /vibe-coding-guardrails:install
 ```
 
-**ขั้นตอนที่ 1–2** เพิ่ม marketplace และติดตั้ง plugin ตอน `/plugin install` Claude Code จะถามว่าจะติดตั้ง Scope ไหน — เลือก **"Install for you (user scope)"** เพื่อให้ Guardrails ทำงานกับทุก Project บนเครื่อง:
+**ขั้นตอนที่ 1–2** เพิ่ม marketplace และติดตั้ง plugin
 
-| Scope | เก็บที่ | ใครได้ใช้ |
-|---|---|---|
-| **User** (แนะนำ) | `~/.claude/settings.json` | ทุก Project ของคุณบนเครื่องนี้ |
-| **Project** | `.claude/settings.json` (commit ขึ้น git) | ทุกคนที่ clone repo นี้ |
-| **Local** | `.claude/settings.local.json` (gitignored) | แค่คุณคนเดียวใน repo นี้ |
+**ขั้นตอนที่ 3** `/reload-plugins` — สำคัญ: ต้อง reload ก่อนเพื่อให้ hooks จาก plugin โหลดเข้า Claude Code (ควรเห็น **5 hooks** หลัง reload)
 
-**ขั้นตอนที่ 3** รัน `/vibe-coding-guardrails:install` — Claude จะติดตั้งให้ครบอัตโนมัติโดยไม่ต้องถาม:
+**ขั้นตอนที่ 4** รัน `/vibe-coding-guardrails:install` — Claude จะ copy `.gitleaks.toml` custom rules และตรวจสอบ gitleaks ให้:
 
-1. **Copy hooks 5 ตัว** ไปที่ `~/.claude/hooks/`
-2. **Copy gitleaks config** — custom rules สำหรับ LINE token, Slack webhook, passwords
-3. **Merge settings.json** — เพิ่ม hooks และ permissions โดยอัตโนมัติ
-4. **ติดตั้ง gitleaks** ถ้ายังไม่มีในเครื่อง
+1. **Copy gitleaks config** — custom rules สำหรับ LINE token, Slack webhook, passwords, API keys
+2. **ตรวจและติดตั้ง gitleaks** ถ้ายังไม่มีในเครื่อง
 
 หลังติดตั้งเสร็จ รัน `/reload-plugins` หรือ restart Claude Code เพื่อให้ hooks เริ่มทำงาน
 
