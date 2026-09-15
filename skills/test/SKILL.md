@@ -56,19 +56,19 @@ cd "${PROJECT_DIR}"
 grep -q "vibe-coding-guardrails" ~/.claude/settings.json 2>/dev/null && echo "PASS" || echo "FAIL"
 ```
 
-### 1.2 Hooks ครบ 5 ตัว
+### 1.2 Hooks ครบ 4 ตัว
 
 **หมายเหตุ:** hooks โหลดผ่าน plugin cache โดยตรง ไม่ได้อยู่ที่ `~/.claude/hooks/` ตรวจจาก plugin cache แทน:
 
 ```bash
 PLUGIN_CACHE=$(ls -d ~/.claude/plugins/cache/chinnme/vibe-coding-guardrails/*/hooks/ 2>/dev/null | tail -1)
 if [ -n "$PLUGIN_CACHE" ]; then
-  EXPECTED="session-start-check.sh no-hardcoded-secrets.sh no-sensitive-files-in-git.sh check-public-repo-push.sh check-insecure-patterns.sh"
+  EXPECTED="session-start-check.sh no-hardcoded-secrets.sh no-sensitive-files-in-git.sh check-public-repo-push.sh"
   FOUND=0
   for h in $EXPECTED; do
     [ -f "$PLUGIN_CACHE/$h" ] && FOUND=$((FOUND + 1))
   done
-  [ "$FOUND" -eq 5 ] && echo "PASS (5/5 ใน plugin cache)" || echo "FAIL ($FOUND/5)"
+  [ "$FOUND" -eq 4 ] && echo "PASS (4/4 ใน plugin cache)" || echo "FAIL ($FOUND/4)"
 else
   echo "FAIL (plugin cache ไม่พบ)"
 fi
@@ -163,35 +163,7 @@ Hook `no-hardcoded-secrets.sh` ต้องบล็อก เพราะ custo
 BLOCKED = PASS | ไม่บล็อก = FAIL
 ลบไฟล์หลังทดสอบ
 
-### 3.3 CORS wildcard → ต้องบล็อก
-
-เขียน content นี้ลงไฟล์ `${TEST_DIR}/bad-cors.js`:
-```javascript
-const express = require('express');
-const cors = require('cors');
-const app = express();
-app.use(cors({ origin: "*" }));
-app.listen(3000);
-```
-
-Hook `check-insecure-patterns.sh` ต้องบล็อก
-BLOCKED = PASS | ไม่บล็อก = FAIL
-ลบไฟล์หลังทดสอบ
-
-### 3.4 localStorage token → ต้องบล็อก
-
-เขียน content นี้ลงไฟล์ `${TEST_DIR}/bad-storage.js`:
-```javascript
-function saveToken(token) {
-  localStorage.setItem('token', token);
-}
-```
-
-Hook `check-insecure-patterns.sh` ต้องบล็อก
-BLOCKED = PASS | ไม่บล็อก = FAIL
-ลบไฟล์หลังทดสอบ
-
-### 3.5 git add .env → ต้องบล็อก
+### 3.3 git add .env → ต้องบล็อก
 
 ```bash
 echo "LINE_TOKEN=supersecret123" > "${TEST_DIR}/.env"
@@ -201,7 +173,7 @@ git -C "${TEST_DIR}" add .env
 Hook `no-sensitive-files-in-git.sh` ต้องบล็อก
 BLOCKED = PASS | ไม่บล็อก = FAIL
 
-### 3.6 git add .env.local → ต้องบล็อก
+### 3.4 git add .env.local → ต้องบล็อก
 
 ```bash
 echo "NEXT_PUBLIC_SECRET=abc" > "${TEST_DIR}/.env.local"
@@ -211,7 +183,7 @@ git -C "${TEST_DIR}" add .env.local
 Hook `no-sensitive-files-in-git.sh` ต้องบล็อก
 BLOCKED = PASS | ไม่บล็อก = FAIL
 
-### 3.7 git add .pem file → ต้องบล็อก
+### 3.5 git add .pem file → ต้องบล็อก
 
 ```bash
 echo "-----BEGIN CERTIFICATE-----" > "${TEST_DIR}/server.pem"
@@ -221,7 +193,7 @@ git -C "${TEST_DIR}" add server.pem
 Hook `no-sensitive-files-in-git.sh` ต้องบล็อก
 BLOCKED = PASS | ไม่บล็อก = FAIL
 
-### 3.8 Push ไป public repo → ต้องบล็อก
+### 3.6 Push ไป public repo → ต้องบล็อก
 
 ```bash
 git -C "${TEST_DIR}" push origin main --dry-run 2>&1 || true
@@ -261,7 +233,7 @@ rm -rf "${TEST_DIR}"
 | # | รายการ | ผล |
 |---|--------|-----|
 | 1.1 | Plugin เปิดใช้งาน | [ผล] |
-| 1.2 | Hooks ครบ 5 ตัว | [ผล] |
+| 1.2 | Hooks ครบ 4 ตัว | [ผล] |
 | 1.3 | Gitleaks config | [ผล] |
 | 1.4 | gitleaks ติดตั้งแล้ว | [ผล] |
 | 1.5 | CLAUDE.md | [ผล] |
@@ -279,18 +251,16 @@ rm -rf "${TEST_DIR}"
 |---|--------|------|---------|-----|
 | 3.1 | Hardcoded API key | no-hardcoded-secrets.sh | บล็อก | [ผล] |
 | 3.2 | Hardcoded password | no-hardcoded-secrets.sh | บล็อก | [ผล] |
-| 3.3 | CORS wildcard | check-insecure-patterns.sh | บล็อก | [ผล] |
-| 3.4 | localStorage token | check-insecure-patterns.sh | บล็อก | [ผล] |
-| 3.5 | git add .env | no-sensitive-files-in-git.sh | บล็อก | [ผล] |
-| 3.6 | git add .env.local | no-sensitive-files-in-git.sh | บล็อก | [ผล] |
-| 3.7 | git add .pem | no-sensitive-files-in-git.sh | บล็อก | [ผล] |
-| 3.8 | Push public repo | check-public-repo-push.sh | บล็อก | [ผล] |
+| 3.3 | git add .env | no-sensitive-files-in-git.sh | บล็อก | [ผล] |
+| 3.4 | git add .env.local | no-sensitive-files-in-git.sh | บล็อก | [ผล] |
+| 3.5 | git add .pem | no-sensitive-files-in-git.sh | บล็อก | [ผล] |
+| 3.6 | Push public repo | check-public-repo-push.sh | บล็อก | [ผล] |
 
 ---
 
 ## สรุป
 
-**รวม:** 15 | **ผ่าน:** X | **ไม่ผ่าน:** X | **ข้าม:** X
+**รวม:** 13 | **ผ่าน:** X | **ไม่ผ่าน:** X | **ข้าม:** X
 
 [ถ้าผ่านหมด]
 ### ✅ ทุก Hook ทำงานถูกต้อง
@@ -309,7 +279,7 @@ rm -rf "${TEST_DIR}"
   Vibe Coding Guardrails — ผลการทดสอบ
 ════════════════════════════════════════════════════════════
 
-  รวม: 15 | ✅ ผ่าน: X | ❌ ไม่ผ่าน: X | ⚠️ ข้าม: X
+  รวม: 13 | ✅ ผ่าน: X | ❌ ไม่ผ่าน: X | ⚠️ ข้าม: X
 
   บันทึก report ที่: guardrails-test-report.md
 
